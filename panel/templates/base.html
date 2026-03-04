@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}DNSTT Panel{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .sidebar-open .sidebar-drawer { transform: translateX(0); }
+    .sidebar-open .sidebar-overlay { opacity: 1; pointer-events: auto; }
+  </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 min-h-screen text-slate-800 dark:text-slate-200 transition-colors">
+  {% block body %}{% endblock %}
+  <script>
+    (function() {
+      var stored = localStorage.getItem('dnstt-theme');
+      var preferDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      var dark = stored === 'dark' || (stored !== 'light' && preferDark);
+      document.documentElement.classList.toggle('dark', dark);
+      window.dnsttSetTheme = function(darkMode) {
+        document.documentElement.classList.toggle('dark', darkMode);
+        localStorage.setItem('dnstt-theme', darkMode ? 'dark' : 'light');
+      };
+      window.dnsttToggleTheme = function() {
+        var dark = document.documentElement.classList.toggle('dark');
+        localStorage.setItem('dnstt-theme', dark ? 'dark' : 'light');
+        return dark;
+      };
+    })();
+  </script>
+</body>
+</html>
