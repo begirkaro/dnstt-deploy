@@ -1,31 +1,32 @@
 {% extends "layout.html" %}
 {% block title %}Speedtest – DNSTT Panel{% endblock %}
 {% block page_title %}Speedtest{% endblock %}
+{% block page_subtitle %}Measure server internet speed{% endblock %}
 {% block content %}
-<section class="mb-8">
-  <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100 mb-3 border-b border-slate-200 dark:border-slate-600 pb-2">Speedtest</h2>
-  <div class="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-200 dark:border-slate-600 p-4 sm:p-6">
-    <p class="text-slate-600 dark:text-slate-400 text-sm mb-4">Measure server internet speed (like speedtest.net).</p>
-    <button type="button" id="speedtest-btn" class="w-full sm:w-auto px-4 py-2.5 bg-slate-800 dark:bg-slate-600 text-white font-medium rounded-lg hover:bg-slate-700 dark:hover:bg-slate-500 focus:ring-2 focus:ring-offset-2 focus:ring-slate-600 dark:focus:ring-offset-slate-800 transition">
+<section>
+  <div class="card bg-[var(--panel-surface)] border-[var(--panel-border)] p-5 sm:p-6">
+    <p class="text-sm text-zinc-500 dark:text-zinc-400 mb-6">Uses the same method as speedtest.net. May take up to a minute.</p>
+    <button type="button" id="speedtest-btn" class="btn-primary inline-flex items-center gap-2 py-3 px-6 text-base">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
       Run Speedtest
     </button>
-    <div id="speedtest-status" class="mt-4 text-sm hidden"></div>
-    <div id="speedtest-result" class="mt-4 hidden grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-      <div class="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 border border-slate-200 dark:border-slate-600">
-        <p class="text-xs text-slate-500 dark:text-slate-400">Download</p>
-        <p id="st-download" class="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-100">—</p>
+    <div id="speedtest-status" class="mt-5 text-sm hidden"></div>
+    <div id="speedtest-result" class="mt-6 hidden grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div class="rounded-xl border border-[var(--panel-border)] bg-zinc-50 dark:bg-zinc-800/50 p-4">
+        <p class="text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1">Download</p>
+        <p id="st-download" class="text-xl font-bold text-violet-600 dark:text-violet-400 tabular-nums">—</p>
       </div>
-      <div class="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 border border-slate-200 dark:border-slate-600">
-        <p class="text-xs text-slate-500 dark:text-slate-400">Upload</p>
-        <p id="st-upload" class="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-100">—</p>
+      <div class="rounded-xl border border-[var(--panel-border)] bg-zinc-50 dark:bg-zinc-800/50 p-4">
+        <p class="text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1">Upload</p>
+        <p id="st-upload" class="text-xl font-bold text-blue-600 dark:text-blue-400 tabular-nums">—</p>
       </div>
-      <div class="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 border border-slate-200 dark:border-slate-600">
-        <p class="text-xs text-slate-500 dark:text-slate-400">Ping</p>
-        <p id="st-ping" class="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-100">—</p>
+      <div class="rounded-xl border border-[var(--panel-border)] bg-zinc-50 dark:bg-zinc-800/50 p-4">
+        <p class="text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1">Ping</p>
+        <p id="st-ping" class="text-xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">—</p>
       </div>
-      <div class="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 border border-slate-200 dark:border-slate-600 col-span-2 sm:col-span-1">
-        <p class="text-xs text-slate-500 dark:text-slate-400">Server</p>
-        <p id="st-server" class="text-sm font-medium text-slate-700 dark:text-slate-200 truncate">—</p>
+      <div class="rounded-xl border border-[var(--panel-border)] bg-zinc-50 dark:bg-zinc-800/50 p-4 col-span-2 sm:col-span-1">
+        <p class="text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1">Server</p>
+        <p id="st-server" class="text-sm font-medium text-zinc-800 dark:text-zinc-200 truncate">—</p>
       </div>
     </div>
   </div>
@@ -41,19 +42,22 @@
     speedtestBtn.disabled = true;
     statusEl.classList.remove('hidden');
     statusEl.textContent = 'Running speedtest… This may take up to a minute.';
-    statusEl.className = 'mt-4 text-sm text-slate-600 dark:text-slate-400';
+    statusEl.className = 'mt-5 text-sm text-zinc-600 dark:text-zinc-400 flex items-center gap-2';
+    statusEl.innerHTML = '<svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Running speedtest…';
     resultEl.classList.add('hidden');
     fetch('{{ url_for("api_speedtest_run") }}', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
       .then(function(r) { return r.json(); })
       .then(function(data) {
         speedtestBtn.disabled = false;
         if (data.error) {
+          statusEl.innerHTML = '';
           statusEl.textContent = 'Error: ' + data.error;
-          statusEl.className = 'mt-4 text-sm text-red-600 dark:text-red-400';
+          statusEl.className = 'mt-5 text-sm text-rose-600 dark:text-rose-400';
           return;
         }
+        statusEl.innerHTML = '';
         statusEl.textContent = 'Done.';
-        statusEl.className = 'mt-4 text-sm text-emerald-600 dark:text-emerald-400';
+        statusEl.className = 'mt-5 text-sm text-emerald-600 dark:text-emerald-400';
         resultEl.classList.remove('hidden');
         document.getElementById('st-download').textContent = data.download_mbps + ' Mbps';
         document.getElementById('st-upload').textContent = data.upload_mbps + ' Mbps';
@@ -62,8 +66,9 @@
       })
       .catch(function(err) {
         speedtestBtn.disabled = false;
+        statusEl.innerHTML = '';
         statusEl.textContent = 'Error: ' + (err.message || 'Request failed');
-        statusEl.className = 'mt-4 text-sm text-red-600 dark:text-red-400';
+        statusEl.className = 'mt-5 text-sm text-rose-600 dark:text-rose-400';
       });
   });
 })();

@@ -1,45 +1,45 @@
 {% extends "layout.html" %}
 {% block title %}Usage – DNSTT Panel{% endblock %}
 {% block page_title %}Usage{% endblock %}
+{% block page_subtitle %}Real-time resource usage{% endblock %}
 {% block content %}
-<section class="mb-8">
-  <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100 mb-3 border-b border-slate-200 dark:border-slate-600 pb-2">Live Usage</h2>
-  <p class="text-slate-600 dark:text-slate-400 text-sm mb-3">Real-time stream.</p>
-  <div class="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-200 dark:border-slate-600 p-4 sm:p-6">
-    <div class="space-y-4">
+<section>
+  <div class="card bg-[var(--panel-surface)] border-[var(--panel-border)] p-5 sm:p-6">
+    <p class="text-sm text-zinc-500 dark:text-zinc-400 mb-6">Live stream updates every second.</p>
+    <div class="space-y-6">
       <div>
-        <div class="flex justify-between text-sm mb-1">
-          <span class="text-slate-600 dark:text-slate-400">CPU</span>
-          <span id="usage-cpu" class="font-medium text-slate-800 dark:text-slate-200">—</span>
+        <div class="flex justify-between text-sm mb-2">
+          <span class="font-medium text-zinc-700 dark:text-zinc-300">CPU</span>
+          <span id="usage-cpu" class="font-semibold text-zinc-900 dark:text-white tabular-nums">—</span>
         </div>
-        <div class="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-          <div id="usage-cpu-bar" class="h-full bg-slate-600 dark:bg-slate-400 rounded-full transition-all duration-150" style="width: 0%"></div>
+        <div class="h-3 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+          <div id="usage-cpu-bar" class="h-full bg-gradient-to-r from-violet-500 to-violet-600 rounded-full transition-all duration-300 ease-out" style="width: 0%"></div>
         </div>
       </div>
       <div>
-        <div class="flex justify-between text-sm mb-1">
-          <span class="text-slate-600 dark:text-slate-400">RAM</span>
-          <span id="usage-ram" class="font-medium text-slate-800 dark:text-slate-200">—</span>
+        <div class="flex justify-between text-sm mb-2">
+          <span class="font-medium text-zinc-700 dark:text-zinc-300">RAM</span>
+          <span id="usage-ram" class="font-semibold text-zinc-900 dark:text-white tabular-nums">—</span>
         </div>
-        <div class="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-          <div id="usage-ram-bar" class="h-full bg-blue-600 dark:bg-blue-500 rounded-full transition-all duration-150" style="width: 0%"></div>
-        </div>
-      </div>
-      <div>
-        <div class="flex justify-between text-sm mb-1">
-          <span class="text-slate-600 dark:text-slate-400">Disk</span>
-          <span id="usage-disk" class="font-medium text-slate-800 dark:text-slate-200">—</span>
-        </div>
-        <div class="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-          <div id="usage-disk-bar" class="h-full bg-emerald-600 dark:bg-emerald-500 rounded-full transition-all duration-150" style="width: 0%"></div>
+        <div class="h-3 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+          <div id="usage-ram-bar" class="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-300 ease-out" style="width: 0%"></div>
         </div>
       </div>
       <div>
-        <div class="flex justify-between text-sm mb-1">
-          <span class="text-slate-600 dark:text-slate-400">Network (sent / recv)</span>
-          <span id="usage-net" class="font-medium text-slate-800 dark:text-slate-200 truncate max-w-[50%]">—</span>
+        <div class="flex justify-between text-sm mb-2">
+          <span class="font-medium text-zinc-700 dark:text-zinc-300">Disk</span>
+          <span id="usage-disk" class="font-semibold text-zinc-900 dark:text-white tabular-nums">—</span>
         </div>
-        <p class="text-xs text-slate-500 dark:text-slate-400 break-all" id="usage-net-detail">—</p>
+        <div class="h-3 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+          <div id="usage-disk-bar" class="h-full bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full transition-all duration-300 ease-out" style="width: 0%"></div>
+        </div>
+      </div>
+      <div class="pt-2 border-t border-[var(--panel-border)]">
+        <div class="flex justify-between text-sm mb-1">
+          <span class="font-medium text-zinc-700 dark:text-zinc-300">Network</span>
+          <span id="usage-net" class="font-semibold text-zinc-900 dark:text-white tabular-nums truncate max-w-[55%]">—</span>
+        </div>
+        <p class="text-xs text-zinc-500 dark:text-zinc-400 break-all" id="usage-net-detail">—</p>
       </div>
     </div>
   </div>

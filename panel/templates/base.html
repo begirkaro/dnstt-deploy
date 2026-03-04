@@ -10,20 +10,53 @@
       darkMode: 'class',
       theme: {
         extend: {
-          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] }
+          fontFamily: { sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'] },
+          colors: {
+            panel: {
+              bg: 'var(--panel-bg)',
+              surface: 'var(--panel-surface)',
+              border: 'var(--panel-border)',
+              muted: 'var(--panel-muted)',
+              accent: 'var(--panel-accent)',
+              'accent-hover': 'var(--panel-accent-hover)',
+            }
+          },
+          boxShadow: {
+            'panel': '0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px -1px rgb(0 0 0 / 0.05)',
+            'panel-lg': '0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05)',
+          }
         }
       }
     }
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
   <style>
-    body { font-family: 'Inter', system-ui, sans-serif; }
+    :root {
+      --panel-bg: #fafafa;
+      --panel-surface: #ffffff;
+      --panel-border: #e4e4e7;
+      --panel-muted: #71717a;
+      --panel-accent: #7c3aed;
+      --panel-accent-hover: #6d28d9;
+    }
+    .dark {
+      --panel-bg: #09090b;
+      --panel-surface: #18181b;
+      --panel-border: #27272a;
+      --panel-muted: #a1a1aa;
+      --panel-accent: #8b5cf6;
+      --panel-accent-hover: #7c3aed;
+    }
+    body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
     .sidebar-open .sidebar-drawer { transform: translateX(0); }
     .sidebar-open .sidebar-overlay { opacity: 1; pointer-events: auto; }
+    .card { @apply rounded-2xl border transition-all duration-200; }
+    .btn-primary { @apply bg-[var(--panel-accent)] hover:bg-[var(--panel-accent-hover)] text-white font-medium rounded-xl px-4 py-2.5 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[var(--panel-accent)] focus:ring-offset-2 focus:ring-offset-[var(--panel-bg)]; }
+    .input-modern { @apply w-full px-4 py-2.5 rounded-xl border border-[var(--panel-border)] bg-[var(--panel-surface)] text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--panel-accent)]/30 focus:border-[var(--panel-accent)]; }
   </style>
 </head>
-<body class="bg-slate-50 dark:bg-slate-900 min-h-screen text-slate-800 dark:text-slate-200 transition-colors">
+<body class="bg-[var(--panel-bg)] min-h-screen text-zinc-800 dark:text-zinc-100 transition-colors duration-300">
   {% block body %}{% endblock %}
   <script>
     (function() {

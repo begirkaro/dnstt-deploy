@@ -1,25 +1,45 @@
 {% extends "layout.html" %}
 {% block title %}Overview – DNSTT Panel{% endblock %}
 {% block page_title %}Overview{% endblock %}
+{% block page_subtitle %}System metrics at a glance{% endblock %}
 {% block content %}
-<section class="mb-8">
-  <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100 mb-3 border-b border-slate-200 dark:border-slate-600 pb-2">Overview</h2>
-  <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-    <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-600 p-3 sm:p-4 shadow-sm">
-      <p class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider">CPU</p>
-      <p class="text-lg sm:text-xl font-bold text-slate-800 dark:text-slate-100" id="overview-cpu">—</p>
+<section>
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="card bg-[var(--panel-surface)] border-[var(--panel-border)] p-5 hover:shadow-panel-lg hover:border-zinc-300 dark:hover:border-zinc-600 group">
+      <div class="flex items-center justify-between mb-3">
+        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/10 text-violet-600 dark:text-violet-400 group-hover:scale-110 transition-transform">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/></svg>
+        </span>
+        <span class="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">CPU</span>
+      </div>
+      <p class="text-2xl font-bold text-zinc-900 dark:text-white tabular-nums" id="overview-cpu">—</p>
     </div>
-    <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-600 p-3 sm:p-4 shadow-sm">
-      <p class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider">RAM</p>
-      <p class="text-lg sm:text-xl font-bold text-slate-800 dark:text-slate-100" id="overview-ram">—</p>
+    <div class="card bg-[var(--panel-surface)] border-[var(--panel-border)] p-5 hover:shadow-panel-lg hover:border-zinc-300 dark:hover:border-zinc-600 group">
+      <div class="flex items-center justify-between mb-3">
+        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
+        </span>
+        <span class="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">RAM</span>
+      </div>
+      <p class="text-2xl font-bold text-zinc-900 dark:text-white tabular-nums" id="overview-ram">—</p>
     </div>
-    <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-600 p-3 sm:p-4 shadow-sm">
-      <p class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider">Disk</p>
-      <p class="text-lg sm:text-xl font-bold text-slate-800 dark:text-slate-100" id="overview-disk">—</p>
+    <div class="card bg-[var(--panel-surface)] border-[var(--panel-border)] p-5 hover:shadow-panel-lg hover:border-zinc-300 dark:hover:border-zinc-600 group">
+      <div class="flex items-center justify-between mb-3">
+        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/></svg>
+        </span>
+        <span class="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Disk</span>
+      </div>
+      <p class="text-2xl font-bold text-zinc-900 dark:text-white tabular-nums" id="overview-disk">—</p>
     </div>
-    <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-600 p-3 sm:p-4 shadow-sm">
-      <p class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider">Uptime</p>
-      <p class="text-lg sm:text-xl font-bold text-slate-800 dark:text-slate-100" id="overview-uptime">—</p>
+    <div class="card bg-[var(--panel-surface)] border-[var(--panel-border)] p-5 hover:shadow-panel-lg hover:border-zinc-300 dark:hover:border-zinc-600 group">
+      <div class="flex items-center justify-between mb-3">
+        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </span>
+        <span class="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Uptime</span>
+      </div>
+      <p class="text-2xl font-bold text-zinc-900 dark:text-white tabular-nums" id="overview-uptime">—</p>
     </div>
   </div>
 </section>
