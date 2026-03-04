@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="flex min-h-screen">
+  <div id="sidebar-overlay" class="sidebar-overlay fixed inset-0 bg-black/50 z-30 opacity-0 pointer-events-none transition-opacity lg:hidden" aria-hidden="true"></div>
+  {% include "_sidebar.html" %}
+
+  <div class="flex-1 flex flex-col min-w-0">
+    <header class="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-600 px-4 py-3 flex items-center gap-2">
+      <button type="button" id="sidebar-open" class="lg:hidden p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700" aria-label="Open menu">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">{% block page_title %}Dashboard{% endblock %}</h2>
+    </header>
+
+    <main class="flex-1 p-4 sm:p-6 max-w-4xl">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, msg in messages %}
+            <div class="mb-4 p-3 rounded-lg text-sm {{ 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300' if category == 'error' else 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300' }}">
+              {{ msg }}
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+
+<script>
+(function() {
+  var body = document.body;
+  var overlay = document.getElementById('sidebar-overlay');
+  function openSidebar() { body.classList.add('sidebar-open'); }
+  function closeSidebar() { body.classList.remove('sidebar-open'); }
+  document.getElementById('sidebar-open').addEventListener('click', openSidebar);
+  document.getElementById('sidebar-close').addEventListener('click', closeSidebar);
+  if (overlay) overlay.addEventListener('click', closeSidebar);
+  document.querySelectorAll('.side-link[href^="/"]').forEach(function(a) {
+    if (a.id !== 'upgrade-btn') a.addEventListener('click', function() { closeSidebar(); });
+  });
+  document.getElementById('theme-toggle').addEventListener('click', function() { window.dnsttToggleTheme(); });
+  fetch('{{ url_for("api_version") }}')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      document.getElementById('sidebar-version').textContent = 'Version ' + (data.version || '—');
+      var btn = document.getElementById('upgrade-btn');
+      if (data.upgrade_available && data.latest_version) btn.textContent = 'Upgrade to v' + data.latest_version;
+    })
+    .catch(function() { document.getElementById('sidebar-version').textContent = 'Version —'; });
+  document.getElementById('upgrade-btn').addEventListener('click', function() {
+    var btn = this;
+    btn.disabled = true;
+    btn.textContent = 'Upgrading…';
+    fetch('{{ url_for("api_upgrade") }}', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.ok) {
+          btn.textContent = 'Restarting…';
+          setTimeout(function() { window.location.reload(); }, 8000);
+        } else {
+          btn.disabled = false;
+          btn.textContent = 'Upgrade';
+          alert('Error: ' + (data.error || 'Unknown'));
+        }
+      })
+      .catch(function() {
+        btn.disabled = false;
+        btn.textContent = 'Upgrade';
+        alert('Request failed.');
+      });
+  });
+})();
+</script>
+{% block page_script %}{% endblock %}
+{% endblock %}

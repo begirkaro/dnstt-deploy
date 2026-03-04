@@ -1,0 +1,71 @@
+{% extends "layout.html" %}
+{% block title %}Speedtest – DNSTT Panel{% endblock %}
+{% block page_title %}Speedtest{% endblock %}
+{% block content %}
+<section class="mb-8">
+  <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100 mb-3 border-b border-slate-200 dark:border-slate-600 pb-2">Speedtest</h2>
+  <div class="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-200 dark:border-slate-600 p-4 sm:p-6">
+    <p class="text-slate-600 dark:text-slate-400 text-sm mb-4">Measure server internet speed (like speedtest.net).</p>
+    <button type="button" id="speedtest-btn" class="w-full sm:w-auto px-4 py-2.5 bg-slate-800 dark:bg-slate-600 text-white font-medium rounded-lg hover:bg-slate-700 dark:hover:bg-slate-500 focus:ring-2 focus:ring-offset-2 focus:ring-slate-600 dark:focus:ring-offset-slate-800 transition">
+      Run Speedtest
+    </button>
+    <div id="speedtest-status" class="mt-4 text-sm hidden"></div>
+    <div id="speedtest-result" class="mt-4 hidden grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+      <div class="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 border border-slate-200 dark:border-slate-600">
+        <p class="text-xs text-slate-500 dark:text-slate-400">Download</p>
+        <p id="st-download" class="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-100">—</p>
+      </div>
+      <div class="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 border border-slate-200 dark:border-slate-600">
+        <p class="text-xs text-slate-500 dark:text-slate-400">Upload</p>
+        <p id="st-upload" class="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-100">—</p>
+      </div>
+      <div class="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 border border-slate-200 dark:border-slate-600">
+        <p class="text-xs text-slate-500 dark:text-slate-400">Ping</p>
+        <p id="st-ping" class="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-100">—</p>
+      </div>
+      <div class="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 border border-slate-200 dark:border-slate-600 col-span-2 sm:col-span-1">
+        <p class="text-xs text-slate-500 dark:text-slate-400">Server</p>
+        <p id="st-server" class="text-sm font-medium text-slate-700 dark:text-slate-200 truncate">—</p>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+{% block page_script %}
+<script>
+(function() {
+  var speedtestBtn = document.getElementById('speedtest-btn');
+  var statusEl = document.getElementById('speedtest-status');
+  var resultEl = document.getElementById('speedtest-result');
+  speedtestBtn.addEventListener('click', function() {
+    speedtestBtn.disabled = true;
+    statusEl.classList.remove('hidden');
+    statusEl.textContent = 'Running speedtest… This may take up to a minute.';
+    statusEl.className = 'mt-4 text-sm text-slate-600 dark:text-slate-400';
+    resultEl.classList.add('hidden');
+    fetch('{{ url_for("api_speedtest_run") }}', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        speedtestBtn.disabled = false;
+        if (data.error) {
+          statusEl.textContent = 'Error: ' + data.error;
+          statusEl.className = 'mt-4 text-sm text-red-600 dark:text-red-400';
+          return;
+        }
+        statusEl.textContent = 'Done.';
+        statusEl.className = 'mt-4 text-sm text-emerald-600 dark:text-emerald-400';
+        resultEl.classList.remove('hidden');
+        document.getElementById('st-download').textContent = data.download_mbps + ' Mbps';
+        document.getElementById('st-upload').textContent = data.upload_mbps + ' Mbps';
+        document.getElementById('st-ping').textContent = data.ping_ms + ' ms';
+        document.getElementById('st-server').textContent = data.server || '—';
+      })
+      .catch(function(err) {
+        speedtestBtn.disabled = false;
+        statusEl.textContent = 'Error: ' + (err.message || 'Request failed');
+        statusEl.className = 'mt-4 text-sm text-red-600 dark:text-red-400';
+      });
+  });
+})();
+</script>
+{% endblock %}

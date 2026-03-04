@@ -389,7 +389,7 @@ def login():
             return redirect(url_for("login"))
         if username == admin_user and verify_password(password, stored_hash):
             session["panel_logged_in"] = True
-            return redirect(url_for("dashboard"))
+            return redirect(url_for("overview"))
         flash("Invalid username or password.", "error")
     return render_template("login.html")
 
@@ -401,14 +401,43 @@ def logout():
 
 
 @app.route("/")
+@app.route("/overview")
 @login_required
-def dashboard():
+def overview():
+    init_db_if_needed()
+    return render_template("overview.html", active_page="overview")
+
+
+@app.route("/server")
+@login_required
+def server():
+    init_db_if_needed()
+    return render_template("server.html", active_page="server")
+
+
+@app.route("/usage")
+@login_required
+def usage():
+    init_db_if_needed()
+    return render_template("usage.html", active_page="usage")
+
+
+@app.route("/speedtest")
+@login_required
+def speedtest():
+    init_db_if_needed()
+    return render_template("speedtest.html", active_page="speedtest")
+
+
+@app.route("/users")
+@login_required
+def users():
     init_db_if_needed()
     with get_db() as conn:
-        users = conn.execute(
+        users_list = conn.execute(
             "SELECT id, username, created_at FROM tunnel_users ORDER BY created_at DESC"
         ).fetchall()
-    return render_template("dashboard.html", users=users)
+    return render_template("users.html", users=users_list, active_page="users")
 
 
 @app.route("/api/server_info")
@@ -488,15 +517,15 @@ def user_add():
 
     if not username:
         flash("Username is required.", "error")
-        return redirect(url_for("dashboard"))
+        return redirect(url_for("users"))
     if len(password) < 6:
         flash("Password must be at least 6 characters.", "error")
-        return redirect(url_for("dashboard"))
+        return redirect(url_for("users"))
 
     ok, err = system_user_add(username, password)
     if not ok:
         flash(err, "error")
-        return redirect(url_for("dashboard"))
+        return redirect(url_for("users"))
 
     with get_db() as conn:
         conn.execute(
@@ -505,7 +534,7 @@ def user_add():
         )
         conn.commit()
     flash(f"User '{username}' created. They can connect via SSH with this username and password.", "success")
-    return redirect(url_for("dashboard"))
+    return redirect(url_for("users"))
 
 
 @app.route("/user/<username>/delete", methods=["POST"])
@@ -514,12 +543,12 @@ def user_delete(username):
     ok, err = system_user_delete(username)
     if not ok:
         flash(err, "error")
-        return redirect(url_for("dashboard"))
+        return redirect(url_for("users"))
     with get_db() as conn:
         conn.execute("DELETE FROM tunnel_users WHERE username = ?", (username,))
         conn.commit()
     flash(f"User '{username}' removed.", "success")
-    return redirect(url_for("dashboard"))
+    return redirect(url_for("users"))
 
 
 @app.route("/user/<username>/password", methods=["POST"])
@@ -528,7 +557,7 @@ def user_password(username):
     password = request.form.get("password") or ""
     if len(password) < 6:
         flash("Password must be at least 6 characters.", "error")
-        return redirect(url_for("dashboard"))  # could redirect back with fragment
+        return redirect(url_for("users"))
 
     with get_db() as conn:
         exists = conn.execute(
@@ -536,14 +565,14 @@ def user_password(username):
         ).fetchone()
     if not exists:
         flash("User not found.", "error")
-        return redirect(url_for("dashboard"))
+        return redirect(url_for("users"))
 
     ok, err = system_user_change_password(username, password)
     if not ok:
         flash(err, "error")
     else:
         flash(f"Password updated for '{username}'.", "success")
-    return redirect(url_for("dashboard"))
+    return redirect(url_for("users"))
 
 
 def main():

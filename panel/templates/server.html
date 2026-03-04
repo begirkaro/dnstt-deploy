@@ -1,0 +1,54 @@
+{% extends "layout.html" %}
+{% block title %}Server Info – DNSTT Panel{% endblock %}
+{% block page_title %}Server Info{% endblock %}
+{% block content %}
+<section class="mb-8">
+  <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100 mb-3 border-b border-slate-200 dark:border-slate-600 pb-2">Server Info</h2>
+  <div class="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-200 dark:border-slate-600 p-4 sm:p-6">
+    <div id="server-info-loading" class="text-slate-500 dark:text-slate-400 text-sm">Loading…</div>
+    <div id="server-info-body" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+      <div><span class="text-slate-500 dark:text-slate-400">Hostname:</span> <span id="si-hostname" class="font-medium text-slate-800 dark:text-slate-200">—</span></div>
+      <div><span class="text-slate-500 dark:text-slate-400">OS:</span> <span id="si-os" class="font-medium text-slate-800 dark:text-slate-200">—</span></div>
+      <div><span class="text-slate-500 dark:text-slate-400">Kernel:</span> <span id="si-release" class="font-medium text-slate-800 dark:text-slate-200">—</span></div>
+      <div><span class="text-slate-500 dark:text-slate-400">Arch:</span> <span id="si-machine" class="font-medium text-slate-800 dark:text-slate-200">—</span></div>
+      <div><span class="text-slate-500 dark:text-slate-400">CPU:</span> <span id="si-cpu" class="font-medium text-slate-800 dark:text-slate-200">—</span></div>
+      <div><span class="text-slate-500 dark:text-slate-400">Total RAM:</span> <span id="si-ram" class="font-medium text-slate-800 dark:text-slate-200">—</span></div>
+      <div><span class="text-slate-500 dark:text-slate-400">Disk:</span> <span id="si-disk" class="font-medium text-slate-800 dark:text-slate-200">—</span></div>
+      <div><span class="text-slate-500 dark:text-slate-400">Uptime:</span> <span id="si-uptime" class="font-medium text-slate-800 dark:text-slate-200">—</span></div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+{% block page_script %}
+<script>
+(function() {
+  function formatUptime(sec) {
+    if (sec == null || sec < 0) return '—';
+    var d = Math.floor(sec / 86400);
+    var h = Math.floor((sec % 86400) / 3600);
+    var m = Math.floor((sec % 3600) / 60);
+    var parts = [];
+    if (d) parts.push(d + 'd');
+    if (h) parts.push(h + 'h');
+    if (m || parts.length === 0) parts.push(m + 'm');
+    return parts.join(' ');
+  }
+  fetch('{{ url_for("api_server_info") }}')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      document.getElementById('server-info-loading').classList.add('hidden');
+      document.getElementById('server-info-body').classList.remove('hidden');
+      document.getElementById('si-hostname').textContent = data.hostname || '—';
+      document.getElementById('si-os').textContent = (data.os || '') + (data.os_release ? ' ' + data.os_release : '') || '—';
+      document.getElementById('si-release').textContent = data.os_release || '—';
+      document.getElementById('si-machine').textContent = data.machine || '—';
+      var cpuStr = data.cpu_cores ? (data.cpu_cores + ' cores' + (data.cpu_logical && data.cpu_logical !== data.cpu_cores ? ' (' + data.cpu_logical + ' logical)' : '') + (data.cpu_mhz ? ', ' + data.cpu_mhz + ' MHz' : '')) : '—';
+      document.getElementById('si-cpu').textContent = cpuStr;
+      document.getElementById('si-ram').textContent = data.ram_total_mb ? data.ram_total_mb + ' MB' : '—';
+      document.getElementById('si-disk').textContent = data.disk_total_gb ? data.disk_total_gb + ' GB' : '—';
+      document.getElementById('si-uptime').textContent = formatUptime(data.uptime_seconds);
+    })
+    .catch(function() { document.getElementById('server-info-loading').textContent = 'Failed to load server info.'; });
+})();
+</script>
+{% endblock %}

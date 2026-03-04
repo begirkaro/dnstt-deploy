@@ -1,0 +1,84 @@
+{% extends "layout.html" %}
+{% block title %}Usage – DNSTT Panel{% endblock %}
+{% block page_title %}Usage{% endblock %}
+{% block content %}
+<section class="mb-8">
+  <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100 mb-3 border-b border-slate-200 dark:border-slate-600 pb-2">Live Usage</h2>
+  <p class="text-slate-600 dark:text-slate-400 text-sm mb-3">Real-time stream.</p>
+  <div class="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-200 dark:border-slate-600 p-4 sm:p-6">
+    <div class="space-y-4">
+      <div>
+        <div class="flex justify-between text-sm mb-1">
+          <span class="text-slate-600 dark:text-slate-400">CPU</span>
+          <span id="usage-cpu" class="font-medium text-slate-800 dark:text-slate-200">—</span>
+        </div>
+        <div class="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+          <div id="usage-cpu-bar" class="h-full bg-slate-600 dark:bg-slate-400 rounded-full transition-all duration-150" style="width: 0%"></div>
+        </div>
+      </div>
+      <div>
+        <div class="flex justify-between text-sm mb-1">
+          <span class="text-slate-600 dark:text-slate-400">RAM</span>
+          <span id="usage-ram" class="font-medium text-slate-800 dark:text-slate-200">—</span>
+        </div>
+        <div class="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+          <div id="usage-ram-bar" class="h-full bg-blue-600 dark:bg-blue-500 rounded-full transition-all duration-150" style="width: 0%"></div>
+        </div>
+      </div>
+      <div>
+        <div class="flex justify-between text-sm mb-1">
+          <span class="text-slate-600 dark:text-slate-400">Disk</span>
+          <span id="usage-disk" class="font-medium text-slate-800 dark:text-slate-200">—</span>
+        </div>
+        <div class="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+          <div id="usage-disk-bar" class="h-full bg-emerald-600 dark:bg-emerald-500 rounded-full transition-all duration-150" style="width: 0%"></div>
+        </div>
+      </div>
+      <div>
+        <div class="flex justify-between text-sm mb-1">
+          <span class="text-slate-600 dark:text-slate-400">Network (sent / recv)</span>
+          <span id="usage-net" class="font-medium text-slate-800 dark:text-slate-200 truncate max-w-[50%]">—</span>
+        </div>
+        <p class="text-xs text-slate-500 dark:text-slate-400 break-all" id="usage-net-detail">—</p>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+{% block page_script %}
+<script>
+(function() {
+  function formatBytes(n) {
+    if (n >= 1e9) return (n / 1e9).toFixed(1) + ' GB';
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + ' MB';
+    if (n >= 1e3) return (n / 1e3).toFixed(1) + ' KB';
+    return n + ' B';
+  }
+  function applyUsageData(data) {
+    document.getElementById('usage-cpu').textContent = data.cpu_percent + '%';
+    document.getElementById('usage-cpu-bar').style.width = data.cpu_percent + '%';
+    document.getElementById('usage-ram').textContent = data.ram_used_mb + ' / ' + data.ram_total_mb + ' MB (' + data.ram_percent + '%)';
+    document.getElementById('usage-ram-bar').style.width = data.ram_percent + '%';
+    document.getElementById('usage-disk').textContent = data.disk_used_gb + ' / ' + data.disk_total_gb + ' GB (' + data.disk_percent + '%)';
+    document.getElementById('usage-disk-bar').style.width = data.disk_percent + '%';
+    document.getElementById('usage-net').textContent = formatBytes(data.network_sent_bytes) + ' / ' + formatBytes(data.network_recv_bytes);
+    document.getElementById('usage-net-detail').textContent = 'Sent: ' + formatBytes(data.network_sent_bytes) + ' — Recv: ' + formatBytes(data.network_recv_bytes);
+  }
+  var url = '{{ url_for("api_usage_stream") }}';
+  if (typeof EventSource !== 'undefined') {
+    var es = new EventSource(url);
+    es.onmessage = function(ev) {
+      try { applyUsageData(JSON.parse(ev.data)); } catch (e) {}
+    };
+    es.onerror = function() {
+      es.close();
+      setTimeout(function() { window.location.reload(); }, 2000);
+    };
+  } else {
+    setInterval(function() {
+      fetch('{{ url_for("api_usage") }}').then(function(r) { return r.json(); }).then(applyUsageData).catch(function() {});
+    }, 1000);
+  }
+})();
+</script>
+{% endblock %}
