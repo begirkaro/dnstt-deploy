@@ -35,6 +35,16 @@ PANEL_ARCHIVE_URL="${PANEL_ARCHIVE_URL:-https://github.com/begirkaro/dnstt-deplo
 # Global variable to track if update is available
 UPDATE_AVAILABLE=false
 
+# Get primary server IP (first non-loopback IPv4)
+get_server_ip() {
+    local ip
+    ip=$(hostname -I 2>/dev/null | awk '{print $1}')
+    [[ -z "$ip" ]] && ip=$(ip -4 route get 1 2>/dev/null | grep -oP 'src \K[0-9.]+' || true)
+    [[ -z "$ip" ]] && ip=$(hostname -i 2>/dev/null | awk '{print $1}')
+    [[ -z "$ip" ]] && ip="YOUR_SERVER_IP"
+    echo "$ip"
+}
+
 # Function to install/update the script itself
 install_script() {
     print_status "Installing/updating dnstt-deploy script..."
@@ -244,7 +254,7 @@ show_configuration_info() {
         echo -e "${BLUE}SSH User Management Panel:${NC}"
         local panel_port
         panel_port=$(grep "^PANEL_PORT=" "${CONFIG_DIR}/panel.env" 2>/dev/null | cut -d= -f2)
-        echo -e "Panel URL: ${YELLOW}http://YOUR_SERVER_IP:${panel_port:-5847}${NC}"
+        echo -e "Panel URL: ${YELLOW}http://$(get_server_ip):${panel_port:-5847}${NC}"
         echo -e "Credentials: ${YELLOW}cat ${CONFIG_DIR}/panel_credentials.txt${NC}"
         echo -e "  Status:  ${YELLOW}systemctl status dnstt-panel${NC}"
         echo -e "  Logs:    ${YELLOW}journalctl -u dnstt-panel -f${NC}"
@@ -1162,8 +1172,10 @@ install_dnstt_panel() {
 
         # Save credentials for display (root only)
         if [[ -n "$panel_admin" && -n "$panel_pass" ]]; then
+            local server_ip
+            server_ip=$(get_server_ip)
             cat > "${CONFIG_DIR}/panel_credentials.txt" << EOF
-Panel URL: http://YOUR_SERVER_IP:${panel_port}
+Panel URL: http://${server_ip}:${panel_port}
 Admin username: ${panel_admin}
 Admin password: ${panel_pass}
 Save these credentials; the password cannot be recovered.
@@ -1217,7 +1229,7 @@ EOF
         ufw allow "${panel_port}/tcp" 2>/dev/null || true
     fi
 
-    print_status "Panel installed. Manage SSH tunnel users at http://YOUR_SERVER_IP:$panel_port"
+    print_status "Panel installed. Manage SSH tunnel users at http://$(get_server_ip):$panel_port"
 }
 
 # Function to create systemd service
