@@ -10,13 +10,17 @@
     <form method="post" action="{{ url_for('user_add') }}" class="flex flex-col sm:flex-row flex-wrap gap-4 items-stretch sm:items-end">
       <div class="flex-1 min-w-[200px]">
         <label for="username" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Username</label>
-        <input type="text" id="username" name="username" required pattern="[a-zA-Z][a-zA-Z0-9_]{2,31}" title="3–32 chars, letter first" class="input-modern" placeholder="e.g. alice">
+        <input type="text" id="username" name="username" required pattern="[a-zA-Z][a-zA-Z0-9_]{2,31}" title="3–32 chars, letter first"
+               class="w-full px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500 dark:focus:ring-violet-400/30 transition-all"
+               placeholder="e.g. alice">
       </div>
       <div class="flex-1 min-w-[200px]">
         <label for="password" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Password</label>
-        <input type="password" id="password" name="password" required minlength="6" class="input-modern" placeholder="Min 6 characters">
+        <input type="password" id="password" name="password" required
+               class="w-full px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500 dark:focus:ring-violet-400/30 transition-all"
+               placeholder="Password">
       </div>
-      <button type="submit" class="btn-primary shrink-0 sm:mb-0 mb-2">
+      <button type="submit" class="shrink-0 sm:mb-0 mb-2 py-2.5 px-5 rounded-xl font-semibold text-white bg-violet-600 hover:bg-violet-500 dark:bg-violet-500 dark:hover:bg-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-800 shadow-lg hover:shadow-xl active:scale-[0.98] transition-all duration-200">
         Add user
       </button>
     </form>
@@ -45,7 +49,8 @@
                 <td class="px-5 py-4">
                   <div class="flex flex-col sm:flex-row justify-start gap-2">
                     <form method="post" action="{{ url_for('user_password', username=u.username) }}" class="inline flex flex-wrap items-center gap-2" onsubmit="return confirm('Change password for {{ u.username }}?');">
-                      <input type="password" name="password" placeholder="New password" minlength="6" required class="input-modern py-2 px-3 text-sm max-w-[140px]">
+                      <input type="password" name="password" placeholder="New password" required
+                             class="w-full max-w-[140px] px-3 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500/40 transition-all">
                       <button type="submit" class="text-sm font-medium text-[var(--panel-accent)] hover:underline whitespace-nowrap">Change password</button>
                     </form>
                     <form method="post" action="{{ url_for('user_delete', username=u.username) }}" class="inline" onsubmit="return confirm('Remove user {{ u.username }}?');">

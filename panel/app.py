@@ -518,9 +518,6 @@ def user_add():
     if not username:
         flash("Username is required.", "error")
         return redirect(url_for("users"))
-    if len(password) < 6:
-        flash("Password must be at least 6 characters.", "error")
-        return redirect(url_for("users"))
 
     ok, err = system_user_add(username, password)
     if not ok:
@@ -555,9 +552,6 @@ def user_delete(username):
 @login_required
 def user_password(username):
     password = request.form.get("password") or ""
-    if len(password) < 6:
-        flash("Password must be at least 6 characters.", "error")
-        return redirect(url_for("users"))
 
     with get_db() as conn:
         exists = conn.execute(
