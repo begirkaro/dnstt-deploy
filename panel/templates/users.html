@@ -7,22 +7,35 @@
   <div class="card bg-[var(--panel-surface)] border-[var(--panel-border)] p-5 sm:p-6">
     <h2 class="text-base font-semibold text-zinc-900 dark:text-white mb-1">Add tunnel user</h2>
     <p class="text-sm text-zinc-500 dark:text-zinc-400 mb-5">Users connect via SSH over the DNS tunnel with username and password.</p>
-    <form method="post" action="{{ url_for('user_add') }}" class="flex flex-col sm:flex-row flex-wrap gap-4 items-stretch sm:items-end">
-      <div class="flex-1 min-w-[200px]">
-        <label for="username" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Username</label>
-        <input type="text" id="username" name="username" required pattern="[a-zA-Z][a-zA-Z0-9_]{2,31}" title="3–32 chars, letter first"
-               class="w-full px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500 dark:focus:ring-violet-400/30 transition-all"
-               placeholder="e.g. alice">
+    <form method="post" action="{{ url_for('user_add') }}" class="flex flex-col gap-4">
+      <div class="flex flex-col sm:flex-row flex-wrap gap-4 items-stretch sm:items-end">
+        <div class="flex-1 min-w-[200px]">
+          <label for="username" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Username</label>
+          <input type="text" id="username" name="username" required pattern="[a-zA-Z][a-zA-Z0-9_]{2,31}" title="3–32 chars, letter first"
+                 class="w-full px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500 dark:focus:ring-violet-400/30 transition-all"
+                 placeholder="e.g. alice">
+        </div>
+        <div class="flex-1 min-w-[200px]">
+          <label for="password" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Password</label>
+          <input type="password" id="password" name="password" required
+                 class="w-full px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500 dark:focus:ring-violet-400/30 transition-all"
+                 placeholder="Password">
+        </div>
+        <div class="flex-1 min-w-[120px]">
+          <label for="data_limit_mb" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Data limit (MB)</label>
+          <input type="number" id="data_limit_mb" name="data_limit_mb" min="0" step="1" placeholder="Unlimited"
+                 class="w-full px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500 transition-all">
+        </div>
+        <div class="flex-1 min-w-[160px]">
+          <label for="expire_at" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Expires (date)</label>
+          <input type="date" id="expire_at" name="expire_at"
+                 class="w-full px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500 transition-all">
+        </div>
+        <button type="submit" class="shrink-0 sm:mb-0 mb-2 py-2.5 px-5 rounded-xl font-semibold text-white bg-violet-600 hover:bg-violet-500 dark:bg-violet-500 dark:hover:bg-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-800 shadow-lg hover:shadow-xl active:scale-[0.98] transition-all duration-200">
+          Add user
+        </button>
       </div>
-      <div class="flex-1 min-w-[200px]">
-        <label for="password" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Password</label>
-        <input type="password" id="password" name="password" required
-               class="w-full px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500 dark:focus:ring-violet-400/30 transition-all"
-               placeholder="Password">
-      </div>
-      <button type="submit" class="shrink-0 sm:mb-0 mb-2 py-2.5 px-5 rounded-xl font-semibold text-white bg-violet-600 hover:bg-violet-500 dark:bg-violet-500 dark:hover:bg-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-800 shadow-lg hover:shadow-xl active:scale-[0.98] transition-all duration-200">
-        Add user
-      </button>
+      <p class="text-xs text-zinc-500 dark:text-zinc-400">Leave data limit and expiry empty for no limit. When limit or expiry is reached, the user is disabled automatically.</p>
     </form>
   </div>
 
@@ -37,6 +50,10 @@
           <thead>
             <tr class="border-b border-[var(--panel-border)] bg-zinc-50/80 dark:bg-zinc-800/50">
               <th class="text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider px-5 py-3">Username</th>
+              <th class="text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider px-5 py-3">Usage</th>
+              <th class="text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider px-5 py-3">Limit</th>
+              <th class="text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider px-5 py-3 hidden sm:table-cell">Expires</th>
+              <th class="text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider px-5 py-3">Status</th>
               <th class="text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider px-5 py-3 hidden sm:table-cell">Created</th>
               <th class="text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider px-5 py-3">Actions</th>
             </tr>
@@ -45,9 +62,25 @@
             {% for u in users %}
               <tr class="border-b border-[var(--panel-border)]/70 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors">
                 <td class="px-5 py-4 font-medium text-zinc-900 dark:text-white">{{ u.username }}</td>
+                <td class="px-5 py-4 text-zinc-700 dark:text-zinc-300 text-sm">{{ format_bytes(u.usage_bytes) }}</td>
+                <td class="px-5 py-4 text-zinc-600 dark:text-zinc-400 text-sm">{{ format_bytes(u.data_limit_bytes) if u.data_limit_bytes is not none else '—' }}</td>
+                <td class="px-5 py-4 text-zinc-500 dark:text-zinc-400 text-sm hidden sm:table-cell">{{ u.expire_at[:10] if u.expire_at else '—' }}</td>
+                <td class="px-5 py-4">
+                  {% if u.disabled %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300">Disabled</span>
+                  {% else %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">Active</span>
+                  {% endif %}
+                </td>
                 <td class="px-5 py-4 text-zinc-500 dark:text-zinc-400 text-sm hidden sm:table-cell">{{ u.created_at[:10] if u.created_at else '—' }}</td>
                 <td class="px-5 py-4">
-                  <div class="flex flex-col sm:flex-row justify-start gap-2">
+                  <div class="flex flex-col sm:flex-row justify-start gap-2 flex-wrap">
+                    <a href="{{ url_for('user_edit', username=u.username) }}" class="text-sm font-medium text-[var(--panel-accent)] hover:underline whitespace-nowrap">Edit limits</a>
+                    {% if u.disabled %}
+                      <form method="post" action="{{ url_for('user_enable', username=u.username) }}" class="inline" onsubmit="return confirm('Re-enable {{ u.username }}?');">
+                        <button type="submit" class="text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:underline">Enable</button>
+                      </form>
+                    {% endif %}
                     <form method="post" action="{{ url_for('user_password', username=u.username) }}" class="inline flex flex-wrap items-center gap-2" onsubmit="return confirm('Change password for {{ u.username }}?');">
                       <input type="password" name="password" placeholder="New password" required
                              class="w-full max-w-[140px] px-3 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500/40 transition-all">
@@ -70,20 +103,30 @@
     {% endif %}
   </div>
 
-  {% if new_user_dns_config %}
+  {% if new_user_dns_config or new_user_slipnet_config %}
   <div id="user-config-modal-overlay" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/60 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="user-config-modal-title">
     <div class="card bg-[var(--panel-surface)] border-[var(--panel-border)] max-w-2xl w-full max-h-[90vh] flex flex-col shadow-xl">
       <div class="p-5 sm:p-6 border-b border-[var(--panel-border)]">
         <h2 id="user-config-modal-title" class="text-lg font-semibold text-zinc-900 dark:text-white">Client config — copy it</h2>
-        <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-1">Paste this link into your client app (e.g. V2rayNG). It is only shown once after creating the user.</p>
+        <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-1">Paste into your client app. Shown only once after creating the user.</p>
       </div>
-      <div class="p-5 sm:p-6 flex-1 overflow-auto">
-        <textarea id="user-config-dns-url" readonly class="w-full h-32 px-4 py-3 rounded-xl border border-zinc-200 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-800/80 text-zinc-900 dark:text-zinc-100 text-sm font-mono resize-none focus:outline-none focus:ring-2 focus:ring-violet-500/40">{{ new_user_dns_config }}</textarea>
+      <div class="p-5 sm:p-6 flex-1 overflow-auto space-y-5">
+        {% if new_user_dns_config %}
+        <div>
+          <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">netmod</label>
+          <textarea id="user-config-netmod" readonly class="w-full h-28 px-4 py-3 rounded-xl border border-zinc-200 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-800/80 text-zinc-900 dark:text-zinc-100 text-sm font-mono resize-none focus:outline-none focus:ring-2 focus:ring-violet-500/40">{{ new_user_dns_config }}</textarea>
+          <button type="button" class="user-config-copy-btn mt-2 btn-primary" data-target="user-config-netmod">Copy</button>
+        </div>
+        {% endif %}
+        {% if new_user_slipnet_config %}
+        <div>
+          <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">slipnet</label>
+          <textarea id="user-config-slipnet" readonly class="w-full h-28 px-4 py-3 rounded-xl border border-zinc-200 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-800/80 text-zinc-900 dark:text-zinc-100 text-sm font-mono resize-none focus:outline-none focus:ring-2 focus:ring-violet-500/40">{{ new_user_slipnet_config }}</textarea>
+          <button type="button" class="user-config-copy-btn mt-2 btn-primary" data-target="user-config-slipnet">Copy</button>
+        </div>
+        {% endif %}
       </div>
-      <div class="p-5 sm:p-6 border-t border-[var(--panel-border)] flex flex-wrap gap-3">
-        <button type="button" id="user-config-copy-btn" class="btn-primary">
-          Copy
-        </button>
+      <div class="p-5 sm:p-6 border-t border-[var(--panel-border)]">
         <button type="button" id="user-config-close-btn" class="px-4 py-2.5 rounded-xl font-medium border border-[var(--panel-border)] bg-[var(--panel-surface)] text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all">
           Close
         </button>
@@ -94,31 +137,35 @@
 </section>
 {% endblock %}
 {% block page_script %}
-{% if new_user_dns_config %}
+{% if new_user_dns_config or new_user_slipnet_config %}
 <script>
 (function() {
   var overlay = document.getElementById('user-config-modal-overlay');
-  var copyBtn = document.getElementById('user-config-copy-btn');
   var closeBtn = document.getElementById('user-config-close-btn');
-  var textarea = document.getElementById('user-config-dns-url');
   function closeModal() {
     if (overlay) overlay.style.display = 'none';
   }
-  function copyToClipboard() {
-    textarea.select();
-    try {
-      document.execCommand('copy');
-      copyBtn.textContent = 'Copied!';
-      setTimeout(function() { copyBtn.textContent = 'Copy'; }, 2000);
-    } catch (e) {
+  document.querySelectorAll('.user-config-copy-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var id = this.getAttribute('data-target');
+      var textarea = document.getElementById(id);
+      if (!textarea) return;
+      textarea.select();
       try {
-        navigator.clipboard.writeText(textarea.value);
-        copyBtn.textContent = 'Copied!';
-        setTimeout(function() { copyBtn.textContent = 'Copy'; }, 2000);
-      } catch (e2) { alert('Copy failed'); }
-    }
-  }
-  if (copyBtn) copyBtn.addEventListener('click', copyToClipboard);
+        document.execCommand('copy');
+        this.textContent = 'Copied!';
+        var t = this;
+        setTimeout(function() { t.textContent = 'Copy'; }, 2000);
+      } catch (e) {
+        try {
+          navigator.clipboard.writeText(textarea.value);
+          this.textContent = 'Copied!';
+          var t = this;
+          setTimeout(function() { t.textContent = 'Copy'; }, 2000);
+        } catch (e2) { alert('Copy failed'); }
+        }
+    });
+  });
   if (closeBtn) closeBtn.addEventListener('click', closeModal);
   if (overlay) overlay.addEventListener('click', function(e) { if (e.target === overlay) closeModal(); });
 })();

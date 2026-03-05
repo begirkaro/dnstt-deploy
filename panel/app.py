@@ -16,6 +16,7 @@ import platform
 import time
 from functools import wraps
 from pathlib import Path
+from datetime import datetime, timezone
 
 try:
     import psutil
@@ -61,7 +62,7 @@ DNS_NS_DEFAULT = "d.getcpcod.info"
 
 
 def build_user_dns_config(username, password):
-    """Build JSON config for tunnel user and return dns://<base64> URL."""
+    """Build JSON config for tunnel user and return dns://<base64> URL (netmod)."""
     addr = get_config("dns_addr") or DNS_ADDR_DEFAULT
     ns = get_config("dns_ns") or DNS_NS_DEFAULT
     pubkey = get_config("dnstt_public_key") or DNSTT_PUBLIC_KEY_DEFAULT
@@ -76,6 +77,65 @@ def build_user_dns_config(username, password):
     json_str = json.dumps(config, indent=2, ensure_ascii=False)
     b64 = base64.b64encode(json_str.encode("utf-8")).decode("ascii")
     return "dns://" + b64
+
+
+def build_user_slipnet_config(username, password):
+    """Build slipnet pipe-separated config and return slipnet://<base64> URL."""
+    addr = get_config("dns_addr") or DNS_ADDR_DEFAULT
+    ns = get_config("dns_ns") or DNS_NS_DEFAULT
+    pubkey = get_config("dnstt_public_key") or DNSTT_PUBLIC_KEY_DEFAULT
+    # slipnet wants addr like 8.8.8.8:53:0
+    addr_slip = (addr or "").strip()
+    if not addr_slip:
+        addr_slip = "8.8.8.8:53:0"
+    elif addr_slip.count(":") == 1:
+        addr_slip = addr_slip + ":0"
+    elif addr_slip.count(":") == 2:
+        pass
+    else:
+        addr_slip = addr_slip + ":53:0"
+    # 15|dnstt_ssh|config_name|ns|addr:0|0|200|bbr|1080|127.0.0.1|0|pubkey|||1|user|pass|22|0|127.0.0.1|0||udp|password||||0|443|||0|
+    config_name = username
+    parts = [
+        "15",
+        "dnstt_ssh",
+        config_name,
+        ns,
+        addr_slip,
+        "0",
+        "200",
+        "bbr",
+        "1080",
+        "127.0.0.1",
+        "0",
+        pubkey,
+        "",
+        "",
+        "",
+        "1",
+        username,
+        password,
+        "22",
+        "0",
+        "127.0.0.1",
+        "0",
+        "",
+        "udp",
+        "password",
+        "",
+        "",
+        "",
+        "",
+        "0",
+        "443",
+        "",
+        "",
+        "",
+        "0",
+    ]
+    raw = "|".join(parts)
+    b64 = base64.b64encode(raw.encode("utf-8")).decode("ascii")
+    return "slipnet://" + b64
 
 
 def init_db_if_needed():
@@ -95,6 +155,28 @@ def init_db_if_needed():
             )
         """)
         conn.commit()
+
+    _migrate_tunnel_users_limits()
+
+
+def _migrate_tunnel_users_limits():
+    """Add limit/expiry/usage columns to tunnel_users if missing."""
+    cols = [
+        ("data_limit_bytes", "INTEGER"),
+        ("expire_at", "TEXT"),
+        ("disabled", "INTEGER DEFAULT 0"),
+        ("usage_bytes", "INTEGER DEFAULT 0"),
+    ]
+    with get_db() as conn:
+        for col_name, col_type in cols:
+            try:
+                conn.execute(
+                    "ALTER TABLE tunnel_users ADD COLUMN " + col_name + " " + col_type
+                )
+                conn.commit()
+            except sqlite3.OperationalError as e:
+                if "duplicate column" not in str(e).lower():
+                    raise
 
 
 def login_required(f):
@@ -188,6 +270,196 @@ def system_user_change_password(username, password):
         return True, None
     except Exception as e:
         return False, str(e)
+
+
+# ---------- Per-user limits and usage (iptables owner match) ----------
+IPTABLES_CHAIN = "DNSTT_USERS"
+IPTABLES_TABLE = "mangle"
+
+
+def _get_uid(username):
+    """Return UID for username or None if not found."""
+    try:
+        r = subprocess.run(
+            ["id", "-u", username],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return int(r.stdout.strip()) if r.stdout.strip() else None
+    except (subprocess.CalledProcessError, ValueError):
+        return None
+
+
+def _ensure_dnstt_iptables_chain():
+    """Create DNSTT_USERS chain and hook into OUTPUT if not present. Requires root."""
+    try:
+        # Check if chain exists
+        subprocess.run(
+            ["iptables", "-t", IPTABLES_TABLE, "-L", IPTABLES_CHAIN, "-n"],
+            capture_output=True,
+            check=True,
+        )
+    except subprocess.CalledProcessError:
+        try:
+            subprocess.run(
+                ["iptables", "-t", IPTABLES_TABLE, "-N", IPTABLES_CHAIN],
+                capture_output=True,
+                check=True,
+            )
+            # Final accept so other traffic passes
+            subprocess.run(
+                [
+                    "iptables", "-t", IPTABLES_TABLE, "-A", IPTABLES_CHAIN,
+                    "-j", "ACCEPT",
+                ],
+                capture_output=True,
+                check=True,
+            )
+            # Insert at head of OUTPUT so our chain runs first
+            subprocess.run(
+                [
+                    "iptables", "-t", IPTABLES_TABLE, "-I", "OUTPUT", "1",
+                    "-j", IPTABLES_CHAIN,
+                ],
+                capture_output=True,
+                check=True,
+            )
+        except subprocess.CalledProcessError:
+            pass
+
+
+def _iptables_add_user_rule(uid):
+    """Insert a counting rule for this UID at position 1 in DNSTT_USERS if not already present."""
+    try:
+        r = subprocess.run(
+            [
+                "iptables", "-t", IPTABLES_TABLE, "-L", IPTABLES_CHAIN,
+                "-v", "-x", "-n",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if r.returncode == 0 and str(uid) in r.stdout and "uid-owner" in r.stdout:
+            return
+    except Exception:
+        pass
+    _ensure_dnstt_iptables_chain()
+    try:
+        subprocess.run(
+            [
+                "iptables", "-t", IPTABLES_TABLE, "-I", IPTABLES_CHAIN, "1",
+                "-m", "owner", "--uid-owner", str(uid), "-j", "ACCEPT",
+            ],
+            capture_output=True,
+            check=True,
+        )
+    except subprocess.CalledProcessError:
+        pass
+
+
+def _iptables_get_byte_count(uid):
+    """Return bytes matched by the rule for this UID, or 0."""
+    try:
+        r = subprocess.run(
+            [
+                "iptables", "-t", IPTABLES_TABLE, "-L", IPTABLES_CHAIN,
+                "-v", "-x", "-n",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if r.returncode != 0:
+            return 0
+        # Lines look like: 0 0 ACCEPT ... owner UID match uid-owner 1001
+        for line in r.stdout.splitlines():
+            if "owner" in line and "uid-owner" in line and str(uid) in line:
+                parts = line.split()
+                if len(parts) >= 2:
+                    try:
+                        return int(parts[1])  # bytes is 2nd column (pkts, bytes, ...)
+                    except ValueError:
+                        pass
+        return 0
+    except Exception:
+        return 0
+
+
+def _lock_system_user(username):
+    """Lock user so they cannot log in (passwd -l)."""
+    try:
+        subprocess.run(
+            ["usermod", "-L", username],
+            capture_output=True,
+            check=True,
+        )
+        return True
+    except subprocess.CalledProcessError:
+        return False
+
+
+def _unlock_system_user(username):
+    """Unlock user (usermod -U)."""
+    try:
+        subprocess.run(
+            ["usermod", "-U", username],
+            capture_output=True,
+            check=True,
+        )
+        return True
+    except subprocess.CalledProcessError:
+        return False
+
+
+def update_user_usage_and_check_limits():
+    """For each tunnel user: sync usage from iptables to DB; if over limit or expired, set disabled and lock."""
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT id, username, data_limit_bytes, expire_at, disabled FROM tunnel_users"
+        ).fetchall()
+        for row in rows:
+            uid = _get_uid(row["username"])
+            usage = _iptables_get_byte_count(uid) if uid else 0
+            conn.execute(
+                "UPDATE tunnel_users SET usage_bytes = ? WHERE id = ?",
+                (usage, row["id"]),
+            )
+            limit = row["data_limit_bytes"]
+            expire_at = row["expire_at"]
+            now = datetime.now(timezone.utc)
+            should_disable = False
+            if limit is not None and usage >= limit:
+                should_disable = True
+            if expire_at:
+                try:
+                    exp = datetime.fromisoformat(expire_at.replace("Z", "+00:00"))
+                    if now >= exp:
+                        should_disable = True
+                except (ValueError, TypeError):
+                    pass
+            if should_disable and not row["disabled"]:
+                conn.execute(
+                    "UPDATE tunnel_users SET disabled = 1 WHERE id = ?",
+                    (row["id"],),
+                )
+                conn.commit()
+                _lock_system_user(row["username"])
+        conn.commit()
+
+
+def format_bytes(n):
+    """Format byte count as human string (B, KB, MB, GB)."""
+    if n is None or n < 0:
+        return "—"
+    if n < 1024:
+        return f"{n} B"
+    if n < 1024 * 1024:
+        return f"{n / 1024:.1f} KB"
+    if n < 1024 * 1024 * 1024:
+        return f"{n / (1024 * 1024):.1f} MB"
+    return f"{n / (1024 ** 3):.1f} GB"
 
 
 # ---------- Server info & usage (for dashboard) ----------
@@ -458,16 +730,21 @@ def speedtest():
 @login_required
 def users():
     init_db_if_needed()
+    update_user_usage_and_check_limits()
     new_user_dns_config = session.pop("new_user_dns_config", None)
+    new_user_slipnet_config = session.pop("new_user_slipnet_config", None)
     with get_db() as conn:
         users_list = conn.execute(
-            "SELECT id, username, created_at FROM tunnel_users ORDER BY created_at DESC"
+            """SELECT id, username, created_at, data_limit_bytes, expire_at, disabled, usage_bytes
+               FROM tunnel_users ORDER BY created_at DESC"""
         ).fetchall()
     return render_template(
         "users.html",
         users=users_list,
         active_page="users",
         new_user_dns_config=new_user_dns_config,
+        new_user_slipnet_config=new_user_slipnet_config,
+        format_bytes=format_bytes,
     )
 
 
@@ -580,15 +857,39 @@ def user_add():
         flash(err, "error")
         return redirect(url_for("users"))
 
+    data_limit_mb = request.form.get("data_limit_mb") or ""
+    data_limit_bytes = None
+    if data_limit_mb.strip():
+        try:
+            data_limit_bytes = int(float(data_limit_mb.strip()) * 1024 * 1024)
+            if data_limit_bytes < 0:
+                data_limit_bytes = None
+        except (ValueError, TypeError):
+            pass
+
+    expire_at = (request.form.get("expire_at") or "").strip() or None
+    if expire_at:
+        try:
+            datetime.fromisoformat(expire_at.replace("Z", "+00:00"))
+        except (ValueError, TypeError):
+            expire_at = None
+
     with get_db() as conn:
         conn.execute(
-            "INSERT INTO tunnel_users (username) VALUES (?)",
-            (username,),
+            """INSERT INTO tunnel_users (username, data_limit_bytes, expire_at, disabled, usage_bytes)
+               VALUES (?, ?, ?, 0, 0)""",
+            (username, data_limit_bytes, expire_at),
         )
         conn.commit()
 
+    uid = _get_uid(username)
+    if uid:
+        _iptables_add_user_rule(uid)
+
     dns_url = build_user_dns_config(username, password)
+    slipnet_url = build_user_slipnet_config(username, password)
     session["new_user_dns_config"] = dns_url
+    session["new_user_slipnet_config"] = slipnet_url
     flash(f"User '{username}' created. Copy the config below for the client.", "success")
     return redirect(url_for("users"))
 
@@ -625,6 +926,85 @@ def user_password(username):
         flash(err, "error")
     else:
         flash(f"Password updated for '{username}'.", "success")
+    return redirect(url_for("users"))
+
+
+@app.route("/user/<username>/edit", methods=["GET", "POST"])
+@login_required
+def user_edit(username):
+    with get_db() as conn:
+        row = conn.execute(
+            """SELECT id, username, data_limit_bytes, expire_at, disabled, usage_bytes
+               FROM tunnel_users WHERE username = ?""",
+            (username,),
+        ).fetchone()
+    if not row:
+        flash("User not found.", "error")
+        return redirect(url_for("users"))
+
+    if request.method == "POST":
+        data_limit_mb = request.form.get("data_limit_mb") or ""
+        data_limit_bytes = None
+        if data_limit_mb.strip():
+            try:
+                data_limit_bytes = int(float(data_limit_mb.strip()) * 1024 * 1024)
+                if data_limit_bytes < 0:
+                    data_limit_bytes = None
+            except (ValueError, TypeError):
+                pass
+        expire_at = (request.form.get("expire_at") or "").strip() or None
+        if expire_at:
+            try:
+                datetime.fromisoformat(expire_at.replace("Z", "+00:00"))
+            except (ValueError, TypeError):
+                expire_at = None
+        with get_db() as conn:
+            conn.execute(
+                """UPDATE tunnel_users SET data_limit_bytes = ?, expire_at = ?
+                   WHERE username = ?""",
+                (data_limit_bytes, expire_at, username),
+            )
+            conn.commit()
+        uid = _get_uid(username)
+        if uid:
+            _iptables_add_user_rule(uid)
+        flash(f"Limits updated for '{username}'.", "success")
+        return redirect(url_for("users"))
+
+    limit_mb = None
+    if row["data_limit_bytes"] is not None:
+        limit_mb = round(row["data_limit_bytes"] / (1024 * 1024), 1)
+    expire_local = row["expire_at"]
+    if expire_local:
+        expire_local = str(expire_local)
+        if "T" in expire_local:
+            expire_local = expire_local.split("T")[0]
+        elif len(expire_local) >= 10:
+            expire_local = expire_local[:10]
+    else:
+        expire_local = ""
+    user_dict = {k: row[k] for k in row.keys()}
+    return render_template(
+        "user_edit.html",
+        active_page="users",
+        user=user_dict,
+        limit_mb=limit_mb,
+        expire_at_value=expire_local,
+        format_bytes=format_bytes,
+    )
+
+
+@app.route("/user/<username>/enable", methods=["POST"])
+@login_required
+def user_enable(username):
+    with get_db() as conn:
+        conn.execute(
+            "UPDATE tunnel_users SET disabled = 0 WHERE username = ?",
+            (username,),
+        )
+        conn.commit()
+    _unlock_system_user(username)
+    flash(f"User '{username}' re-enabled. They can log in again.", "success")
     return redirect(url_for("users"))
 
 
