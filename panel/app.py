@@ -369,8 +369,50 @@ def _iptables_add_user_rule(uid):
         pass
 
 
+def _iptables_rebuild_chain():
+    """Flush DNSTT_USERS and add exactly one rule per tunnel user + final ACCEPT. Resets byte counters."""
+    _ensure_dnstt_iptables_chain()
+    try:
+        subprocess.run(
+            ["iptables", "-t", IPTABLES_TABLE, "-F", IPTABLES_CHAIN],
+            capture_output=True,
+            check=True,
+            timeout=5,
+        )
+    except subprocess.CalledProcessError:
+        return
+    # Final ACCEPT so other traffic passes
+    try:
+        subprocess.run(
+            [
+                "iptables", "-t", IPTABLES_TABLE, "-A", IPTABLES_CHAIN,
+                "-j", "ACCEPT",
+            ],
+            capture_output=True,
+            check=True,
+        )
+    except subprocess.CalledProcessError:
+        return
+    with get_db() as conn:
+        rows = conn.execute("SELECT username FROM tunnel_users").fetchall()
+    for row in rows:
+        uid = _get_uid(row["username"])
+        if uid:
+            try:
+                subprocess.run(
+                    [
+                        "iptables", "-t", IPTABLES_TABLE, "-I", IPTABLES_CHAIN, "1",
+                        "-m", "owner", "--uid-owner", str(uid), "-j", "ACCEPT",
+                    ],
+                    capture_output=True,
+                    check=True,
+                )
+            except subprocess.CalledProcessError:
+                pass
+
+
 def _iptables_get_byte_count(uid):
-    """Return total bytes matched by all rules for this UID, or 0. iptables outputs 'owner UID match <uid>'."""
+    """Return total bytes matched by all rules for this UID, or 0. iptables: 'pkts bytes target ... owner UID match <uid>'."""
     try:
         r = subprocess.run(
             [
@@ -387,15 +429,13 @@ def _iptables_get_byte_count(uid):
         total = 0
         for line in r.stdout.splitlines():
             parts = line.split()
-            # Skip header / final ACCEPT (no owner). Rule line: "  pkts bytes target ... owner UID match 1001"
-            if len(parts) < 2 or "owner" not in line or "match" not in line:
+            if not parts or "owner" not in line or "match" not in line:
                 continue
             if parts[-1] != uid_str:
                 continue
-            try:
-                total += int(parts[1])
-            except ValueError:
-                pass
+            m = re.match(r"^\s*(\d+)\s+(\d+)\s+", line)
+            if m:
+                total += int(m.group(2))
         return total
     except Exception:
         return 0
@@ -1084,6 +1124,8 @@ def user_config(username):
 
 def main():
     init_db_if_needed()
+    # Rebuild iptables chain so exactly one rule per user (no duplicates); resets usage counters
+    _iptables_rebuild_chain()
 
     def _limit_check_loop():
         while True:
