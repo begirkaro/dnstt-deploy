@@ -278,8 +278,11 @@ def system_user_change_password(username, password):
         return False, str(e)
 
 
-# ---------- Per-user limits and usage (iptables owner match) ----------
+# ---------- Per-user limits and usage (iptables: OUTPUT + INPUT via CONNMARK) ----------
+# We count both directions: OUTPUT (packets from user process) and INPUT (reply traffic to that connection).
+# CONNMARK marks the connection in OUTPUT; INPUT chain matches connmark to count incoming bytes.
 IPTABLES_CHAIN = "DNSTT_USERS"
+IPTABLES_CHAIN_IN = "DNSTT_USERS_IN"
 IPTABLES_TABLE = "mangle"
 
 
@@ -298,9 +301,9 @@ def _get_uid(username):
 
 
 def _ensure_dnstt_iptables_chain():
-    """Create DNSTT_USERS chain and hook into OUTPUT if not present. Requires root."""
+    """Create DNSTT_USERS (OUTPUT). Optionally create DNSTT_USERS_IN (INPUT) for bidirectional count; if that fails, we only count OUTPUT."""
+    # OUTPUT chain (required)
     try:
-        # Check if chain exists
         subprocess.run(
             ["iptables", "-t", IPTABLES_TABLE, "-L", IPTABLES_CHAIN, "-n"],
             capture_output=True,
@@ -313,21 +316,39 @@ def _ensure_dnstt_iptables_chain():
                 capture_output=True,
                 check=True,
             )
-            # Final accept so other traffic passes
             subprocess.run(
-                [
-                    "iptables", "-t", IPTABLES_TABLE, "-A", IPTABLES_CHAIN,
-                    "-j", "ACCEPT",
-                ],
+                ["iptables", "-t", IPTABLES_TABLE, "-A", IPTABLES_CHAIN, "-j", "ACCEPT"],
                 capture_output=True,
                 check=True,
             )
-            # Insert at head of OUTPUT so our chain runs first
             subprocess.run(
-                [
-                    "iptables", "-t", IPTABLES_TABLE, "-I", "OUTPUT", "1",
-                    "-j", IPTABLES_CHAIN,
-                ],
+                ["iptables", "-t", IPTABLES_TABLE, "-I", "OUTPUT", "1", "-j", IPTABLES_CHAIN],
+                capture_output=True,
+                check=True,
+            )
+        except subprocess.CalledProcessError:
+            pass
+    # INPUT chain (optional – some environments don't allow mangle INPUT)
+    try:
+        subprocess.run(
+            ["iptables", "-t", IPTABLES_TABLE, "-L", IPTABLES_CHAIN_IN, "-n"],
+            capture_output=True,
+            check=True,
+        )
+    except subprocess.CalledProcessError:
+        try:
+            subprocess.run(
+                ["iptables", "-t", IPTABLES_TABLE, "-N", IPTABLES_CHAIN_IN],
+                capture_output=True,
+                check=True,
+            )
+            subprocess.run(
+                ["iptables", "-t", IPTABLES_TABLE, "-A", IPTABLES_CHAIN_IN, "-j", "ACCEPT"],
+                capture_output=True,
+                check=True,
+            )
+            subprocess.run(
+                ["iptables", "-t", IPTABLES_TABLE, "-I", "INPUT", "1", "-j", IPTABLES_CHAIN_IN],
                 capture_output=True,
                 check=True,
             )
@@ -336,41 +357,69 @@ def _ensure_dnstt_iptables_chain():
 
 
 def _iptables_add_user_rule(uid):
-    """Insert a counting rule for this UID at position 1 in DNSTT_USERS if not already present. iptables shows 'owner UID match <uid>'."""
+    """Ensure counting rules exist for this UID. OUTPUT: CONNMARK+ACCEPT (or just ACCEPT if INPUT chain missing). INPUT: connmark ACCEPT only if DNSTT_USERS_IN exists."""
+    uid_str = str(uid)
+    has_out = False
+    has_in = False
     try:
         r = subprocess.run(
-            [
-                "iptables", "-t", IPTABLES_TABLE, "-L", IPTABLES_CHAIN,
-                "-v", "-x", "-n",
-            ],
-            capture_output=True,
-            text=True,
-            timeout=5,
+            ["iptables", "-t", IPTABLES_TABLE, "-L", IPTABLES_CHAIN, "-v", "-x", "-n"],
+            capture_output=True, text=True, timeout=5,
         )
         if r.returncode == 0:
-            uid_str = str(uid)
             for line in r.stdout.splitlines():
                 parts = line.split()
                 if len(parts) >= 2 and "owner" in line and "match" in line and parts[-1] == uid_str:
-                    return
+                    has_out = True
+                    break
+        r2 = subprocess.run(
+            ["iptables", "-t", IPTABLES_TABLE, "-L", IPTABLES_CHAIN_IN, "-v", "-x", "-n"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if r2.returncode == 0:
+            for line in r2.stdout.splitlines():
+                if "connmark" in line.lower() and uid_str in line.split():
+                    has_in = True
+                    break
     except Exception:
         pass
+    if has_out and has_in:
+        return
     _ensure_dnstt_iptables_chain()
-    try:
-        subprocess.run(
-            [
-                "iptables", "-t", IPTABLES_TABLE, "-I", IPTABLES_CHAIN, "1",
-                "-m", "owner", "--uid-owner", str(uid), "-j", "ACCEPT",
-            ],
-            capture_output=True,
-            check=True,
-        )
-    except subprocess.CalledProcessError:
-        pass
+    if not has_out:
+        try:
+            subprocess.run(
+                ["iptables", "-t", IPTABLES_TABLE, "-I", IPTABLES_CHAIN, "1",
+                 "-m", "owner", "--uid-owner", uid_str, "-j", "ACCEPT"],
+                capture_output=True, check=True,
+            )
+            subprocess.run(
+                ["iptables", "-t", IPTABLES_TABLE, "-I", IPTABLES_CHAIN, "1",
+                 "-m", "owner", "--uid-owner", uid_str, "-j", "CONNMARK", "--set-mark", uid_str],
+                capture_output=True, check=True,
+            )
+        except subprocess.CalledProcessError:
+            try:
+                subprocess.run(
+                    ["iptables", "-t", IPTABLES_TABLE, "-I", IPTABLES_CHAIN, "1",
+                     "-m", "owner", "--uid-owner", uid_str, "-j", "ACCEPT"],
+                    capture_output=True, check=True,
+                )
+            except subprocess.CalledProcessError:
+                pass
+    if not has_in:
+        try:
+            subprocess.run(
+                ["iptables", "-t", IPTABLES_TABLE, "-I", IPTABLES_CHAIN_IN, "1",
+                 "-m", "connmark", "--mark", uid_str, "-j", "ACCEPT"],
+                capture_output=True, check=True,
+            )
+        except subprocess.CalledProcessError:
+            pass
 
 
 def _iptables_rebuild_chain():
-    """Flush DNSTT_USERS and add exactly one rule per tunnel user + final ACCEPT. Resets byte counters."""
+    """Flush DNSTT_USERS (and DNSTT_USERS_IN if it exists) and add one rule set per user. Resets counters. INPUT chain is optional."""
     _ensure_dnstt_iptables_chain()
     try:
         subprocess.run(
@@ -381,13 +430,19 @@ def _iptables_rebuild_chain():
         )
     except subprocess.CalledProcessError:
         return
-    # Final ACCEPT so other traffic passes
     try:
         subprocess.run(
-            [
-                "iptables", "-t", IPTABLES_TABLE, "-A", IPTABLES_CHAIN,
-                "-j", "ACCEPT",
-            ],
+            ["iptables", "-t", IPTABLES_TABLE, "-F", IPTABLES_CHAIN_IN],
+            capture_output=True,
+            check=True,
+            timeout=5,
+        )
+    except subprocess.CalledProcessError:
+        pass
+    # OUTPUT: final ACCEPT, then per user: CONNMARK then ACCEPT (fallback to ACCEPT-only if CONNMARK fails)
+    try:
+        subprocess.run(
+            ["iptables", "-t", IPTABLES_TABLE, "-A", IPTABLES_CHAIN, "-j", "ACCEPT"],
             capture_output=True,
             check=True,
         )
@@ -400,10 +455,51 @@ def _iptables_rebuild_chain():
         if uid:
             try:
                 subprocess.run(
-                    [
-                        "iptables", "-t", IPTABLES_TABLE, "-I", IPTABLES_CHAIN, "1",
-                        "-m", "owner", "--uid-owner", str(uid), "-j", "ACCEPT",
-                    ],
+                    ["iptables", "-t", IPTABLES_TABLE, "-I", IPTABLES_CHAIN, "1",
+                     "-m", "owner", "--uid-owner", str(uid), "-j", "ACCEPT"],
+                    capture_output=True,
+                    check=True,
+                )
+                subprocess.run(
+                    ["iptables", "-t", IPTABLES_TABLE, "-I", IPTABLES_CHAIN, "1",
+                     "-m", "owner", "--uid-owner", str(uid), "-j", "CONNMARK", "--set-mark", str(uid)],
+                    capture_output=True,
+                    check=True,
+                )
+            except subprocess.CalledProcessError:
+                try:
+                    subprocess.run(
+                        ["iptables", "-t", IPTABLES_TABLE, "-I", IPTABLES_CHAIN, "1",
+                         "-m", "owner", "--uid-owner", str(uid), "-j", "ACCEPT"],
+                        capture_output=True,
+                        check=True,
+                    )
+                except subprocess.CalledProcessError:
+                    pass
+    # INPUT: only if chain exists
+    try:
+        subprocess.run(
+            ["iptables", "-t", IPTABLES_TABLE, "-L", IPTABLES_CHAIN_IN, "-n"],
+            capture_output=True,
+            check=True,
+        )
+    except subprocess.CalledProcessError:
+        return
+    try:
+        subprocess.run(
+            ["iptables", "-t", IPTABLES_TABLE, "-A", IPTABLES_CHAIN_IN, "-j", "ACCEPT"],
+            capture_output=True,
+            check=True,
+        )
+    except subprocess.CalledProcessError:
+        return
+    for row in rows:
+        uid = _get_uid(row["username"])
+        if uid:
+            try:
+                subprocess.run(
+                    ["iptables", "-t", IPTABLES_TABLE, "-I", IPTABLES_CHAIN_IN, "1",
+                     "-m", "connmark", "--mark", str(uid), "-j", "ACCEPT"],
                     capture_output=True,
                     check=True,
                 )
@@ -412,8 +508,11 @@ def _iptables_rebuild_chain():
 
 
 def _iptables_get_byte_count(uid):
-    """Return total bytes matched by all rules for this UID, or 0. iptables: 'pkts bytes target ... owner UID match <uid>'."""
+    """Return total bytes (OUTPUT + INPUT if DNSTT_USERS_IN exists). OUTPUT: any rule with owner UID (ACCEPT or CONNMARK). INPUT: connmark rule bytes."""
+    uid_str = str(uid)
+    total = 0
     try:
+        # OUTPUT: sum bytes from any rule with owner UID match (works with old ACCEPT-only and new CONNMARK+ACCEPT)
         r = subprocess.run(
             [
                 "iptables", "-t", IPTABLES_TABLE, "-L", IPTABLES_CHAIN,
@@ -423,22 +522,54 @@ def _iptables_get_byte_count(uid):
             text=True,
             timeout=5,
         )
-        if r.returncode != 0:
-            return 0
-        uid_str = str(uid)
-        total = 0
-        for line in r.stdout.splitlines():
-            parts = line.split()
-            if not parts or "owner" not in line or "match" not in line:
-                continue
-            if parts[-1] != uid_str:
-                continue
-            m = re.match(r"^\s*(\d+)\s+(\d+)\s+", line)
-            if m:
-                total += int(m.group(2))
-        return total
+        if r.returncode == 0:
+            for line in r.stdout.splitlines():
+                parts = line.split()
+                if not parts or "owner" not in line or "match" not in line:
+                    continue
+                if parts[-1] != uid_str:
+                    continue
+                m = re.match(r"^\s*(\d+)\s+(\d+)\s+", line)
+                if m:
+                    total += int(m.group(2))
+        # INPUT: sum bytes from connmark rules if chain exists
+        r = subprocess.run(
+            [
+                "iptables", "-t", IPTABLES_TABLE, "-L", IPTABLES_CHAIN_IN,
+                "-v", "-x", "-n",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if r.returncode == 0:
+            for line in r.stdout.splitlines():
+                if "connmark" not in line.lower():
+                    continue
+                # Match line like " ... connmark match 1000" or "match 0x3e8"
+                parts = line.split()
+                if len(parts) < 2:
+                    continue
+                mark_ok = False
+                for p in parts:
+                    if p == uid_str:
+                        mark_ok = True
+                        break
+                    if p.startswith("0x"):
+                        try:
+                            if int(p, 16) == uid:
+                                mark_ok = True
+                                break
+                        except ValueError:
+                            pass
+                if not mark_ok:
+                    continue
+                m = re.match(r"^\s*(\d+)\s+(\d+)\s+", line)
+                if m:
+                    total += int(m.group(2))
     except Exception:
-        return 0
+        pass
+    return total
 
 
 def _lock_system_user(username):
