@@ -69,9 +69,9 @@
     </div>
 
     {% if users %}
-      <div class="divide-y divide-[var(--panel-border)]">
+      <div class="divide-y divide-[var(--panel-border)]" id="users-list">
         {% for u in users %}
-          <div class="group px-6 py-4 sm:px-8 sm:py-5 hover:bg-zinc-50/80 dark:hover:bg-zinc-800/30 transition-colors">
+          <div class="group px-6 py-4 sm:px-8 sm:py-5 hover:bg-zinc-50/80 dark:hover:bg-zinc-800/30 transition-colors" data-username="{{ u.username }}">
             <div class="flex flex-col sm:flex-row sm:items-center gap-4">
               <div class="flex items-center gap-4 min-w-0 flex-1">
                 <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-violet-500/10 text-violet-600 dark:text-violet-400 font-semibold text-lg">
@@ -80,26 +80,32 @@
                 <div class="min-w-0">
                   <div class="flex items-center gap-2 flex-wrap">
                     <span class="font-semibold text-zinc-900 dark:text-white">{{ u.username }}</span>
-                    {% if u.disabled %}
-                      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300">
-                        <span class="w-1.5 h-1.5 rounded-full bg-current"></span> Disabled
-                      </span>
-                    {% else %}
-                      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">
-                        <span class="w-1.5 h-1.5 rounded-full bg-current"></span> Active
-                      </span>
-                    {% endif %}
+                    <span class="user-status-badge">
+                      {% if u.disabled %}
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300">
+                          <span class="w-1.5 h-1.5 rounded-full bg-current"></span> Disabled
+                        </span>
+                      {% else %}
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">
+                          <span class="w-1.5 h-1.5 rounded-full bg-current"></span> Active
+                        </span>
+                      {% endif %}
+                    </span>
                   </div>
                   <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                    <span>Usage {{ format_bytes(u.usage_bytes) }}{% if u.data_limit_bytes is not none %} / {{ format_bytes(u.data_limit_bytes) }}{% endif %}</span>
+                    <span class="user-usage-text">Usage <span class="usage-value">{{ format_bytes(u.usage_bytes) }}</span>{% if u.data_limit_bytes is not none %} / <span class="limit-value">{{ format_bytes(u.data_limit_bytes) }}</span>{% endif %}</span>
                     <span>·</span>
-                    <span>Expires {{ u.expire_at[:10] if u.expire_at else 'Never' }}</span>
+                    <span>Expires <span class="expires-value">{{ u.expire_at[:10] if u.expire_at else 'Never' }}</span></span>
                     <span>·</span>
                     <span>Created {{ u.created_at[:10] if u.created_at else '—' }}</span>
                   </div>
                   {% if u.data_limit_bytes is not none and u.data_limit_bytes > 0 %}
                   <div class="mt-2 w-full max-w-[200px] h-1.5 rounded-full bg-zinc-200 dark:bg-zinc-700 overflow-hidden">
-                    <div class="h-full rounded-full bg-violet-500 transition-all" style="width: {{ [100, (u.usage_bytes / u.data_limit_bytes * 100)|int]|min }}%"></div>
+                    <div class="user-usage-bar h-full rounded-full bg-violet-500 transition-all" style="width: {{ [100, (u.usage_bytes / u.data_limit_bytes * 100)|int]|min }}%"></div>
+                  </div>
+                  {% else %}
+                  <div class="mt-2 w-full max-w-[200px] h-1.5 rounded-full bg-zinc-200 dark:bg-zinc-700 overflow-hidden hidden user-usage-bar-wrap">
+                    <div class="user-usage-bar h-full rounded-full bg-violet-500 transition-all" style="width: 0%"></div>
                   </div>
                   {% endif %}
                 </div>
@@ -196,6 +202,51 @@
 </section>
 {% endblock %}
 {% block page_script %}
+<script>
+(function() {
+  function formatBytes(n) {
+    if (n == null || n < 0) return '—';
+    if (n < 1024) return n + ' B';
+    if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+    if (n < 1024 * 1024 * 1024) return (n / (1024 * 1024)).toFixed(1) + ' MB';
+    return (n / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
+  }
+  function refreshUsage() {
+    fetch('{{ url_for("api_users_usage") }}')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        (data.users || []).forEach(function(u) {
+          var row = document.querySelector('[data-username="' + u.username + '"]');
+          if (!row) return;
+          var usageVal = row.querySelector('.usage-value');
+          if (usageVal) usageVal.textContent = formatBytes(u.usage_bytes);
+          var limitVal = row.querySelector('.limit-value');
+          if (limitVal) limitVal.textContent = formatBytes(u.data_limit_bytes);
+          var expiresVal = row.querySelector('.expires-value');
+          if (expiresVal) expiresVal.textContent = u.expire_at ? (u.expire_at.slice(0, 10)) : 'Never';
+          var bar = row.querySelector('.user-usage-bar');
+          if (bar && u.data_limit_bytes && u.data_limit_bytes > 0) {
+            var pct = Math.min(100, Math.round((u.usage_bytes / u.data_limit_bytes) * 100));
+            bar.style.width = pct + '%';
+            var wrap = row.querySelector('.user-usage-bar-wrap');
+            if (wrap) wrap.classList.remove('hidden');
+          }
+          var badge = row.querySelector('.user-status-badge');
+          if (badge) {
+            badge.innerHTML = u.disabled
+              ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300"><span class="w-1.5 h-1.5 rounded-full bg-current"></span> Disabled</span>'
+              : '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300"><span class="w-1.5 h-1.5 rounded-full bg-current"></span> Active</span>';
+          }
+        });
+      })
+      .catch(function() {});
+  }
+  {% if users %}
+  setInterval(refreshUsage, 6000);
+  refreshUsage();
+  {% endif %}
+})();
+</script>
 {% if new_user_dns_config or new_user_slipnet_config %}
 <script>
 (function() {

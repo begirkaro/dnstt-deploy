@@ -237,9 +237,16 @@ def system_user_add(username, password):
 
 
 def system_user_delete(username):
-    """Remove system user and home directory."""
+    """Remove system user and home directory. Kills all processes owned by the user first."""
     if not safe_username(username):
         return False, "Invalid username."
+    # Kill all processes owned by this user so userdel can succeed
+    subprocess.run(
+        ["pkill", "-9", "-u", username],
+        capture_output=True,
+        timeout=10,
+    )
+    time.sleep(1)
     try:
         subprocess.run(
             ["userdel", "-r", username],
@@ -854,6 +861,29 @@ def api_upgrade():
     return jsonify({"ok": True, "message": message})
 
 
+@app.route("/api/users/usage")
+@login_required
+def api_users_usage():
+    """Return live usage (from iptables) and limit/expiry/disabled for each tunnel user."""
+    init_db_if_needed()
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT username, data_limit_bytes, expire_at, disabled FROM tunnel_users ORDER BY username"
+        ).fetchall()
+    result = []
+    for row in rows:
+        uid = _get_uid(row["username"])
+        usage_bytes = _iptables_get_byte_count(uid) if uid else 0
+        result.append({
+            "username": row["username"],
+            "usage_bytes": usage_bytes,
+            "data_limit_bytes": row["data_limit_bytes"],
+            "expire_at": row["expire_at"],
+            "disabled": bool(row["disabled"]),
+        })
+    return jsonify({"users": result})
+
+
 @app.route("/user/add", methods=["POST"])
 @login_required
 def user_add():
@@ -1054,6 +1084,19 @@ def user_config(username):
 
 def main():
     init_db_if_needed()
+
+    def _limit_check_loop():
+        while True:
+            try:
+                time.sleep(5)
+                update_user_usage_and_check_limits()
+            except Exception:
+                pass
+
+    import threading
+    t = threading.Thread(target=_limit_check_loop, daemon=True)
+    t.start()
+
     port = int(os.environ.get("PANEL_PORT", get_config("panel_port", "5847")))
     host = os.environ.get("PANEL_HOST", "0.0.0.0")
     app.run(host=host, port=port, debug=False, threaded=True)
