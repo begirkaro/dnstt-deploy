@@ -666,7 +666,7 @@ def run_upgrade():
         )
     except Exception as e:
         return False, str(e)
-    return True, "Upgrade started. Panel will restart in a few seconds."
+    return True, "Upgrade started. Panel and dnstt-deploy script will update from repo; panel will restart in a few seconds."
 
 
 # ---------- Routes ----------

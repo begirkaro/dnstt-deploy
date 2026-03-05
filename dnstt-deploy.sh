@@ -2,6 +2,16 @@
 
 # dnstt Server Setup Script
 # Supports Fedora, Rocky, CentOS, Debian, Ubuntu
+#
+# First-time install (automatic, one command):
+#   bash <(curl -Ls https://raw.githubusercontent.com/begirkaro/dnstt-deploy/main/dnstt-deploy.sh) SUBDOMAIN [MTU] [MODE]
+# Example (SSH mode, MTU 1232):
+#   bash <(curl -Ls https://raw.githubusercontent.com/begirkaro/dnstt-deploy/main/dnstt-deploy.sh) t.example.com 1232 ssh
+# This installs the script to /usr/local/bin/dnstt-deploy, then configures OS, dnstt-server, firewall,
+# and (in SSH mode) the user management panel. No prompts if SUBDOMAIN is given.
+#
+# Later: run "dnstt-deploy" for menu (status, update script, reconfigure, etc.).
+# Panel Upgrade button: updates both the panel and this script from the repo.
 
 set -e
 
@@ -1339,6 +1349,9 @@ main() {
                 2|ssh)   TUNNEL_MODE="ssh"   ;;
                 *)       TUNNEL_MODE="$3"    ;;
             esac
+        fi
+        if [[ -n "$NS_SUBDOMAIN" ]]; then
+            print_status "Unattended install: subdomain=$NS_SUBDOMAIN MTU=${MTU_VALUE} mode=$TUNNEL_MODE"
         fi
     else
         # Running from installed location - check for updates and show menu
