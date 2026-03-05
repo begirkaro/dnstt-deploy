@@ -1,0 +1,23 @@
+{% extends "layout.html" %}
+{% block title %}Config {{ username }} – DNSTT Panel{% endblock %}
+{% block page_title %}Copy config{% endblock %}
+{% block page_subtitle %}{{ username }}{% endblock %}
+{% block content %}
+<section class="max-w-md">
+  <div class="rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-surface)] p-6 sm:p-8 shadow-sm">
+    <p class="text-sm text-zinc-500 dark:text-zinc-400 mb-4">Enter the user's password to generate netmod and slipnet config links. Password is not stored.</p>
+    <form method="post" action="{{ url_for('user_config', username=username) }}" class="space-y-4">
+      <div>
+        <label for="password" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Password for {{ username }}</label>
+        <input type="password" id="password" name="password" required
+               class="w-full px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500 transition-all"
+               placeholder="••••••••">
+      </div>
+      <div class="flex gap-3">
+        <button type="submit" class="btn-primary">Generate config</button>
+        <a href="{{ url_for('users') }}" class="px-4 py-2.5 rounded-xl font-medium border border-[var(--panel-border)] bg-[var(--panel-surface)] text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">Cancel</a>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}

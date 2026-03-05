@@ -1,0 +1,51 @@
+{% extends "layout.html" %}
+{% block title %}Config {{ username }} – DNSTT Panel{% endblock %}
+{% block page_title %}Config for {{ username }}{% endblock %}
+{% block page_subtitle %}Copy and paste into your client{% endblock %}
+{% block content %}
+<section class="space-y-6">
+  <div class="rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-surface)] shadow-sm overflow-hidden">
+    <div class="p-6 sm:p-8 space-y-6">
+      <div>
+        <label class="block text-xs font-semibold uppercase tracking-wider text-violet-600 dark:text-violet-400 mb-2">netmod</label>
+        <textarea id="config-netmod" readonly class="w-full h-24 px-4 py-3 rounded-xl border border-zinc-200 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-800/80 text-zinc-900 dark:text-zinc-100 text-sm font-mono resize-none focus:outline-none focus:ring-2 focus:ring-violet-500/40">{{ dns_config }}</textarea>
+        <button type="button" class="config-copy mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-white bg-violet-600 hover:bg-violet-500 transition-colors text-sm" data-target="config-netmod">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h2a2 2 0 012 2v2m2 4h10a2 2 0 002-2v-2a2 2 0 00-2-2h-2m-2-2h8a2 2 0 012 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2h-2m-2-2V6a2 2 0 012-2h2a2 2 0 012 2v8a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+          <span class="copy-text">Copy</span>
+        </button>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold uppercase tracking-wider text-violet-600 dark:text-violet-400 mb-2">slipnet</label>
+        <textarea id="config-slipnet" readonly class="w-full h-24 px-4 py-3 rounded-xl border border-zinc-200 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-800/80 text-zinc-900 dark:text-zinc-100 text-sm font-mono resize-none focus:outline-none focus:ring-2 focus:ring-violet-500/40">{{ slipnet_config }}</textarea>
+        <button type="button" class="config-copy mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-white bg-violet-600 hover:bg-violet-500 transition-colors text-sm" data-target="config-slipnet">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h2a2 2 0 012 2v2m2 4h10a2 2 0 002-2v-2a2 2 0 00-2-2h-2m-2-2h8a2 2 0 012 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2h-2m-2-2V6a2 2 0 012-2h2a2 2 0 012 2v8a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+          <span class="copy-text">Copy</span>
+        </button>
+      </div>
+      <a href="{{ url_for('users') }}" class="inline-block px-5 py-2.5 rounded-xl font-medium border border-[var(--panel-border)] bg-[var(--panel-surface)] text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">Back to users</a>
+    </div>
+  </div>
+</section>
+{% endblock %}
+{% block page_script %}
+<script>
+document.querySelectorAll('.config-copy').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var id = this.getAttribute('data-target');
+    var textarea = document.getElementById(id);
+    if (!textarea) return;
+    textarea.select();
+    var span = this.querySelector('.copy-text');
+    try {
+      document.execCommand('copy');
+      if (span) { span.textContent = 'Copied!'; setTimeout(function() { span.textContent = 'Copy'; }, 2000); }
+    } catch (e) {
+      try {
+        navigator.clipboard.writeText(textarea.value);
+        if (span) { span.textContent = 'Copied!'; setTimeout(function() { span.textContent = 'Copy'; }, 2000); }
+      } catch (e2) { alert('Copy failed'); }
+    }
+  });
+});
+</script>
+{% endblock %}

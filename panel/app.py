@@ -94,7 +94,7 @@ def build_user_slipnet_config(username, password):
         pass
     else:
         addr_slip = addr_slip + ":53:0"
-    # 15|dnstt_ssh|config_name|ns|addr:0|0|200|bbr|1080|127.0.0.1|0|pubkey|||1|user|pass|22|0|127.0.0.1|0||udp|password||||0|443|||0|
+    # slipnet: ...|||user|pass|22|... (no "1" so client reads ssh_user=username, ssh_pass=password)
     config_name = username
     parts = [
         "15",
@@ -112,7 +112,6 @@ def build_user_slipnet_config(username, password):
         "",
         "",
         "",
-        "1",
         username,
         password,
         "22",
@@ -1006,6 +1005,38 @@ def user_enable(username):
     _unlock_system_user(username)
     flash(f"User '{username}' re-enabled. They can log in again.", "success")
     return redirect(url_for("users"))
+
+
+@app.route("/user/<username>/config", methods=["GET", "POST"])
+@login_required
+def user_config(username):
+    with get_db() as conn:
+        exists = conn.execute(
+            "SELECT 1 FROM tunnel_users WHERE username = ?", (username,)
+        ).fetchone()
+    if not exists:
+        flash("User not found.", "error")
+        return redirect(url_for("users"))
+
+    if request.method == "POST":
+        password = request.form.get("password") or ""
+        if not password:
+            flash("Password is required to generate config.", "error")
+            return redirect(url_for("user_config", username=username))
+        dns_url = build_user_dns_config(username, password)
+        slipnet_url = build_user_slipnet_config(username, password)
+        return render_template(
+            "user_config_show.html",
+            active_page="users",
+            username=username,
+            dns_config=dns_url,
+            slipnet_config=slipnet_url,
+        )
+    return render_template(
+        "user_config.html",
+        active_page="users",
+        username=username,
+    )
 
 
 def main():
