@@ -377,9 +377,16 @@ def _iptables_add_user_rule(uid):
             capture_output=True, text=True, timeout=5,
         )
         if r2.returncode == 0:
+            hex_mark = "0x%x" % uid
             for line in r2.stdout.splitlines():
-                if "connmark" in line.lower() and uid_str in line.split():
-                    has_in = True
+                if "connmark" not in line.lower():
+                    continue
+                parts = line.split()
+                for p in parts:
+                    if p == uid_str or p == hex_mark:
+                        has_in = True
+                        break
+                if has_in:
                     break
     except Exception:
         pass
