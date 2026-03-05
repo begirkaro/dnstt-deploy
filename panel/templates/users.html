@@ -3,131 +3,186 @@
 {% block page_title %}Tunnel Users{% endblock %}
 {% block page_subtitle %}Manage SSH tunnel access{% endblock %}
 {% block content %}
-<section class="space-y-6">
-  <div class="card bg-[var(--panel-surface)] border-[var(--panel-border)] p-5 sm:p-6">
-    <h2 class="text-base font-semibold text-zinc-900 dark:text-white mb-1">Add tunnel user</h2>
-    <p class="text-sm text-zinc-500 dark:text-zinc-400 mb-5">Users connect via SSH over the DNS tunnel with username and password.</p>
-    <form method="post" action="{{ url_for('user_add') }}" class="flex flex-col gap-4">
-      <div class="flex flex-col sm:flex-row flex-wrap gap-4 items-stretch sm:items-end">
-        <div class="flex-1 min-w-[200px]">
-          <label for="username" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Username</label>
-          <input type="text" id="username" name="username" required pattern="[a-zA-Z][a-zA-Z0-9_]{2,31}" title="3–32 chars, letter first"
-                 class="w-full px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500 dark:focus:ring-violet-400/30 transition-all"
-                 placeholder="e.g. alice">
+<section class="space-y-8">
+  <!-- Add user card -->
+  <div class="rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-surface)] shadow-sm overflow-hidden">
+    <div class="p-6 sm:p-8">
+      <div class="flex items-center gap-3 mb-6">
+        <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-500/10 text-violet-600 dark:text-violet-400">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+        </span>
+        <div>
+          <h2 class="text-lg font-semibold text-zinc-900 dark:text-white">Add tunnel user</h2>
+          <p class="text-sm text-zinc-500 dark:text-zinc-400">Users connect via SSH over the DNS tunnel.</p>
         </div>
-        <div class="flex-1 min-w-[200px]">
-          <label for="password" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Password</label>
-          <input type="password" id="password" name="password" required
-                 class="w-full px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500 dark:focus:ring-violet-400/30 transition-all"
-                 placeholder="Password">
-        </div>
-        <div class="flex-1 min-w-[120px]">
-          <label for="data_limit_mb" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Data limit (MB)</label>
-          <input type="number" id="data_limit_mb" name="data_limit_mb" min="0" step="1" placeholder="Unlimited"
-                 class="w-full px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500 transition-all">
-        </div>
-        <div class="flex-1 min-w-[160px]">
-          <label for="expire_at" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Expires (date)</label>
-          <input type="date" id="expire_at" name="expire_at"
-                 class="w-full px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500 transition-all">
-        </div>
-        <button type="submit" class="shrink-0 sm:mb-0 mb-2 py-2.5 px-5 rounded-xl font-semibold text-white bg-violet-600 hover:bg-violet-500 dark:bg-violet-500 dark:hover:bg-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-800 shadow-lg hover:shadow-xl active:scale-[0.98] transition-all duration-200">
-          Add user
-        </button>
       </div>
-      <p class="text-xs text-zinc-500 dark:text-zinc-400">Leave data limit and expiry empty for no limit. When limit or expiry is reached, the user is disabled automatically.</p>
-    </form>
+      <form method="post" action="{{ url_for('user_add') }}" class="space-y-5">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+          <div class="lg:col-span-1">
+            <label for="username" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">Username</label>
+            <input type="text" id="username" name="username" required pattern="[a-zA-Z][a-zA-Z0-9_]{2,31}" title="3–32 chars, letter first"
+                   class="w-full px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-800/50 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500 transition-all text-sm"
+                   placeholder="e.g. alice">
+          </div>
+          <div class="lg:col-span-1">
+            <label for="password" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">Password</label>
+            <input type="password" id="password" name="password" required
+                   class="w-full px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-800/50 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500 transition-all text-sm"
+                   placeholder="••••••••">
+          </div>
+          <div class="lg:col-span-1">
+            <label for="data_limit_mb" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">Data limit (MB)</label>
+            <input type="number" id="data_limit_mb" name="data_limit_mb" min="0" step="1" placeholder="Unlimited"
+                   class="w-full px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-800/50 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500/40 transition-all text-sm">
+          </div>
+          <div class="lg:col-span-1 flex flex-col sm:flex-row gap-3 sm:items-end">
+            <div class="flex-1">
+              <label for="expire_at" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">Expires</label>
+              <input type="date" id="expire_at" name="expire_at"
+                     class="w-full px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-800/50 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-violet-500/40 transition-all text-sm">
+            </div>
+            <button type="submit" class="shrink-0 inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-white bg-violet-600 hover:bg-violet-500 dark:bg-violet-500 dark:hover:bg-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-900 shadow-md hover:shadow-lg active:scale-[0.98] transition-all text-sm">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+              Add user
+            </button>
+          </div>
+        </div>
+        <p class="text-xs text-zinc-500 dark:text-zinc-400">Leave limit and expiry empty for no limit. User is disabled automatically when limit or expiry is reached.</p>
+      </form>
+    </div>
   </div>
 
-  <div class="card bg-[var(--panel-surface)] border-[var(--panel-border)] overflow-hidden">
-    <div class="p-5 sm:p-6 border-b border-[var(--panel-border)]">
-      <h2 class="text-base font-semibold text-zinc-900 dark:text-white">Tunnel user list</h2>
-      <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">These users can log in via SSH over the DNS tunnel.</p>
+  <!-- User list -->
+  <div class="rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-surface)] shadow-sm overflow-hidden">
+    <div class="px-6 py-5 sm:px-8 sm:py-6 border-b border-[var(--panel-border)]">
+      <div class="flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+          </span>
+          <div>
+            <h2 class="text-base font-semibold text-zinc-900 dark:text-white">Tunnel users</h2>
+            <p class="text-sm text-zinc-500 dark:text-zinc-400">{{ users|length }} user{{ 's' if users|length != 1 else '' }}</p>
+          </div>
+        </div>
+      </div>
     </div>
+
     {% if users %}
-      <div class="overflow-x-auto">
-        <table class="w-full min-w-[320px]">
-          <thead>
-            <tr class="border-b border-[var(--panel-border)] bg-zinc-50/80 dark:bg-zinc-800/50">
-              <th class="text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider px-5 py-3">Username</th>
-              <th class="text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider px-5 py-3">Usage</th>
-              <th class="text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider px-5 py-3">Limit</th>
-              <th class="text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider px-5 py-3 hidden sm:table-cell">Expires</th>
-              <th class="text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider px-5 py-3">Status</th>
-              <th class="text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider px-5 py-3 hidden sm:table-cell">Created</th>
-              <th class="text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider px-5 py-3">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for u in users %}
-              <tr class="border-b border-[var(--panel-border)]/70 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors">
-                <td class="px-5 py-4 font-medium text-zinc-900 dark:text-white">{{ u.username }}</td>
-                <td class="px-5 py-4 text-zinc-700 dark:text-zinc-300 text-sm">{{ format_bytes(u.usage_bytes) }}</td>
-                <td class="px-5 py-4 text-zinc-600 dark:text-zinc-400 text-sm">{{ format_bytes(u.data_limit_bytes) if u.data_limit_bytes is not none else '—' }}</td>
-                <td class="px-5 py-4 text-zinc-500 dark:text-zinc-400 text-sm hidden sm:table-cell">{{ u.expire_at[:10] if u.expire_at else '—' }}</td>
-                <td class="px-5 py-4">
-                  {% if u.disabled %}
-                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300">Disabled</span>
-                  {% else %}
-                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">Active</span>
-                  {% endif %}
-                </td>
-                <td class="px-5 py-4 text-zinc-500 dark:text-zinc-400 text-sm hidden sm:table-cell">{{ u.created_at[:10] if u.created_at else '—' }}</td>
-                <td class="px-5 py-4">
-                  <div class="flex flex-col sm:flex-row justify-start gap-2 flex-wrap">
-                    <a href="{{ url_for('user_edit', username=u.username) }}" class="text-sm font-medium text-[var(--panel-accent)] hover:underline whitespace-nowrap">Edit limits</a>
+      <div class="divide-y divide-[var(--panel-border)]">
+        {% for u in users %}
+          <div class="group px-6 py-4 sm:px-8 sm:py-5 hover:bg-zinc-50/80 dark:hover:bg-zinc-800/30 transition-colors">
+            <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+              <div class="flex items-center gap-4 min-w-0 flex-1">
+                <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-violet-500/10 text-violet-600 dark:text-violet-400 font-semibold text-lg">
+                  {{ u.username[0]|upper }}
+                </span>
+                <div class="min-w-0">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="font-semibold text-zinc-900 dark:text-white">{{ u.username }}</span>
                     {% if u.disabled %}
-                      <form method="post" action="{{ url_for('user_enable', username=u.username) }}" class="inline" onsubmit="return confirm('Re-enable {{ u.username }}?');">
-                        <button type="submit" class="text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:underline">Enable</button>
-                      </form>
+                      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300">
+                        <span class="w-1.5 h-1.5 rounded-full bg-current"></span> Disabled
+                      </span>
+                    {% else %}
+                      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">
+                        <span class="w-1.5 h-1.5 rounded-full bg-current"></span> Active
+                      </span>
                     {% endif %}
-                    <form method="post" action="{{ url_for('user_password', username=u.username) }}" class="inline flex flex-wrap items-center gap-2" onsubmit="return confirm('Change password for {{ u.username }}?');">
-                      <input type="password" name="password" placeholder="New password" required
-                             class="w-full max-w-[140px] px-3 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500/40 transition-all">
-                      <button type="submit" class="text-sm font-medium text-[var(--panel-accent)] hover:underline whitespace-nowrap">Change password</button>
-                    </form>
-                    <form method="post" action="{{ url_for('user_delete', username=u.username) }}" class="inline" onsubmit="return confirm('Remove user {{ u.username }}?');">
-                      <button type="submit" class="text-sm font-medium text-rose-600 dark:text-rose-400 hover:underline">Remove</button>
-                    </form>
                   </div>
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+                  <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                    <span>Usage {{ format_bytes(u.usage_bytes) }}{% if u.data_limit_bytes is not none %} / {{ format_bytes(u.data_limit_bytes) }}{% endif %}</span>
+                    <span>·</span>
+                    <span>Expires {{ u.expire_at[:10] if u.expire_at else 'Never' }}</span>
+                    <span>·</span>
+                    <span>Created {{ u.created_at[:10] if u.created_at else '—' }}</span>
+                  </div>
+                  {% if u.data_limit_bytes is not none and u.data_limit_bytes > 0 %}
+                  <div class="mt-2 w-full max-w-[200px] h-1.5 rounded-full bg-zinc-200 dark:bg-zinc-700 overflow-hidden">
+                    <div class="h-full rounded-full bg-violet-500 transition-all" style="width: {{ [100, (u.usage_bytes / u.data_limit_bytes * 100)|int]|min }}%"></div>
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="flex items-center gap-2 shrink-0 flex-wrap">
+                <a href="{{ url_for('user_edit', username=u.username) }}" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors" title="Edit limits">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                  Edit
+                </a>
+                {% if u.disabled %}
+                  <form method="post" action="{{ url_for('user_enable', username=u.username) }}" class="inline" onsubmit="return confirm('Re-enable {{ u.username }}?');">
+                    <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors" title="Enable">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                      Enable
+                    </button>
+                  </form>
+                {% endif %}
+                <form method="post" action="{{ url_for('user_password', username=u.username) }}" class="inline flex items-center gap-2" onsubmit="return confirm('Change password for {{ u.username }}?');">
+                  <input type="password" name="password" placeholder="New password" required
+                         class="w-32 px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-sm placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500/40">
+                  <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/30 hover:bg-violet-100 dark:hover:bg-violet-900/50 transition-colors" title="Change password">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                    Password
+                  </button>
+                </form>
+                <form method="post" action="{{ url_for('user_delete', username=u.username) }}" class="inline" onsubmit="return confirm('Remove user {{ u.username }}? This cannot be undone.');">
+                  <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 hover:bg-rose-100 dark:hover:bg-rose-900/50 transition-colors" title="Remove">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    Remove
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
       </div>
     {% else %}
-      <div class="p-10 text-center">
-        <p class="text-zinc-500 dark:text-zinc-400 text-sm">No tunnel users yet. Add one above.</p>
+      <div class="px-6 py-16 sm:px-8 text-center">
+        <span class="inline-flex h-14 w-14 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 mb-4">
+          <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+        </span>
+        <p class="text-zinc-500 dark:text-zinc-400 font-medium">No tunnel users yet</p>
+        <p class="text-sm text-zinc-400 dark:text-zinc-500 mt-1">Add a user above to get started.</p>
       </div>
     {% endif %}
   </div>
 
+  <!-- Config modal -->
   {% if new_user_dns_config or new_user_slipnet_config %}
-  <div id="user-config-modal-overlay" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/60 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="user-config-modal-title">
-    <div class="card bg-[var(--panel-surface)] border-[var(--panel-border)] max-w-2xl w-full max-h-[90vh] flex flex-col shadow-xl">
-      <div class="p-5 sm:p-6 border-b border-[var(--panel-border)]">
-        <h2 id="user-config-modal-title" class="text-lg font-semibold text-zinc-900 dark:text-white">Client config — copy it</h2>
-        <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-1">Paste into your client app. Shown only once after creating the user.</p>
+  <div id="user-config-modal-overlay" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="user-config-modal-title">
+    <div class="rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-surface)] shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+      <div class="p-6 border-b border-[var(--panel-border)]">
+        <h2 id="user-config-modal-title" class="text-lg font-semibold text-zinc-900 dark:text-white">Client config</h2>
+        <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-1">Copy and paste into your client app. Shown only once.</p>
       </div>
-      <div class="p-5 sm:p-6 flex-1 overflow-auto space-y-5">
+      <div class="p-6 flex-1 overflow-auto space-y-6">
         {% if new_user_dns_config %}
         <div>
-          <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">netmod</label>
-          <textarea id="user-config-netmod" readonly class="w-full h-28 px-4 py-3 rounded-xl border border-zinc-200 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-800/80 text-zinc-900 dark:text-zinc-100 text-sm font-mono resize-none focus:outline-none focus:ring-2 focus:ring-violet-500/40">{{ new_user_dns_config }}</textarea>
-          <button type="button" class="user-config-copy-btn mt-2 btn-primary" data-target="user-config-netmod">Copy</button>
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider text-violet-600 dark:text-violet-400">netmod</span>
+          </div>
+          <textarea id="user-config-netmod" readonly class="w-full h-24 px-4 py-3 rounded-xl border border-zinc-200 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-800/80 text-zinc-900 dark:text-zinc-100 text-sm font-mono resize-none focus:outline-none focus:ring-2 focus:ring-violet-500/40">{{ new_user_dns_config }}</textarea>
+          <button type="button" class="user-config-copy-btn mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-white bg-violet-600 hover:bg-violet-500 transition-colors text-sm" data-target="user-config-netmod">
+            <svg class="w-4 h-4 copy-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h2a2 2 0 012 2v2m2 4h10a2 2 0 002-2v-2a2 2 0 00-2-2h-2m-2-2h8a2 2 0 012 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2h-2m-2-2V6a2 2 0 012-2h2a2 2 0 012 2v8a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            <span class="copy-text">Copy</span>
+          </button>
         </div>
         {% endif %}
         {% if new_user_slipnet_config %}
         <div>
-          <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">slipnet</label>
-          <textarea id="user-config-slipnet" readonly class="w-full h-28 px-4 py-3 rounded-xl border border-zinc-200 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-800/80 text-zinc-900 dark:text-zinc-100 text-sm font-mono resize-none focus:outline-none focus:ring-2 focus:ring-violet-500/40">{{ new_user_slipnet_config }}</textarea>
-          <button type="button" class="user-config-copy-btn mt-2 btn-primary" data-target="user-config-slipnet">Copy</button>
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider text-violet-600 dark:text-violet-400">slipnet</span>
+          </div>
+          <textarea id="user-config-slipnet" readonly class="w-full h-24 px-4 py-3 rounded-xl border border-zinc-200 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-800/80 text-zinc-900 dark:text-zinc-100 text-sm font-mono resize-none focus:outline-none focus:ring-2 focus:ring-violet-500/40">{{ new_user_slipnet_config }}</textarea>
+          <button type="button" class="user-config-copy-btn mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-white bg-violet-600 hover:bg-violet-500 transition-colors text-sm" data-target="user-config-slipnet">
+            <svg class="w-4 h-4 copy-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h2a2 2 0 012 2v2m2 4h10a2 2 0 002-2v-2a2 2 0 00-2-2h-2m-2-2h8a2 2 0 012 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2h-2m-2-2V6a2 2 0 012-2h2a2 2 0 012 2v8a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            <span class="copy-text">Copy</span>
+          </button>
         </div>
         {% endif %}
       </div>
-      <div class="p-5 sm:p-6 border-t border-[var(--panel-border)]">
-        <button type="button" id="user-config-close-btn" class="px-4 py-2.5 rounded-xl font-medium border border-[var(--panel-border)] bg-[var(--panel-surface)] text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all">
+      <div class="p-6 border-t border-[var(--panel-border)] bg-zinc-50/50 dark:bg-zinc-800/30">
+        <button type="button" id="user-config-close-btn" class="px-5 py-2.5 rounded-xl font-medium text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-800 border border-[var(--panel-border)] hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors">
           Close
         </button>
       </div>
@@ -151,19 +206,18 @@
       var textarea = document.getElementById(id);
       if (!textarea) return;
       textarea.select();
+      var span = this.querySelector('.copy-text');
       try {
         document.execCommand('copy');
-        this.textContent = 'Copied!';
-        var t = this;
-        setTimeout(function() { t.textContent = 'Copy'; }, 2000);
+        if (span) span.textContent = 'Copied!';
+        setTimeout(function() { if (span) span.textContent = 'Copy'; }, 2000);
       } catch (e) {
         try {
           navigator.clipboard.writeText(textarea.value);
-          this.textContent = 'Copied!';
-          var t = this;
-          setTimeout(function() { t.textContent = 'Copy'; }, 2000);
+          if (span) span.textContent = 'Copied!';
+          setTimeout(function() { if (span) span.textContent = 'Copy'; }, 2000);
         } catch (e2) { alert('Copy failed'); }
-        }
+      }
     });
   });
   if (closeBtn) closeBtn.addEventListener('click', closeModal);
