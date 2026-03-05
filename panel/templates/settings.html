@@ -1,0 +1,37 @@
+{% extends "layout.html" %}
+{% block title %}Settings – DNSTT Panel{% endblock %}
+{% block page_title %}Settings{% endblock %}
+{% block page_subtitle %}DNS and tunnel config for new users{% endblock %}
+{% block content %}
+<section class="space-y-6">
+  <div class="card bg-[var(--panel-surface)] border-[var(--panel-border)] p-5 sm:p-6">
+    <h2 class="text-base font-semibold text-zinc-900 dark:text-white mb-1">Tunnel config</h2>
+    <p class="text-sm text-zinc-500 dark:text-zinc-400 mb-5">These values are used when generating client config for new tunnel users. Change <strong>addr</strong> here to affect all new configs.</p>
+    <form method="post" action="{{ url_for('settings') }}" class="space-y-5">
+      <div>
+        <label for="dns_addr" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">DNS Address (addr)</label>
+        <input type="text" id="dns_addr" name="dns_addr" value="{{ dns_addr }}"
+               placeholder="8.8.8.8:53"
+               class="w-full px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500 transition-all"
+               required>
+        <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">e.g. 8.8.8.8:53 — used in every new user config.</p>
+      </div>
+      <div>
+        <label for="dns_ns" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Nameserver (ns)</label>
+        <input type="text" id="dns_ns" name="dns_ns" value="{{ dns_ns }}"
+               placeholder="d.getcpcod.info"
+               class="w-full px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500 transition-all"
+               required>
+      </div>
+      <div>
+        <label for="dnstt_public_key" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Public Key (pubkey)</label>
+        <input type="text" id="dnstt_public_key" name="dnstt_public_key" value="{{ dnstt_public_key }}"
+               class="w-full px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500 transition-all font-mono text-sm"
+               required>
+        <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">DNSTT server public key — stored and used in all new user configs.</p>
+      </div>
+      <button type="submit" class="btn-primary">Save settings</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

@@ -69,5 +69,59 @@
       </div>
     {% endif %}
   </div>
+
+  {% if new_user_dns_config %}
+  <div id="user-config-modal-overlay" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/60 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="user-config-modal-title">
+    <div class="card bg-[var(--panel-surface)] border-[var(--panel-border)] max-w-2xl w-full max-h-[90vh] flex flex-col shadow-xl">
+      <div class="p-5 sm:p-6 border-b border-[var(--panel-border)]">
+        <h2 id="user-config-modal-title" class="text-lg font-semibold text-zinc-900 dark:text-white">کانفیگ کلاینت — کپی کن</h2>
+        <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-1">این لینک را در اپ کلاینت (مثلاً V2rayNG) وارد کن. فقط یک‌بار بعد از ساخت یوزر نمایش داده می‌شود.</p>
+      </div>
+      <div class="p-5 sm:p-6 flex-1 overflow-auto">
+        <textarea id="user-config-dns-url" readonly class="w-full h-32 px-4 py-3 rounded-xl border border-zinc-200 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-800/80 text-zinc-900 dark:text-zinc-100 text-sm font-mono resize-none focus:outline-none focus:ring-2 focus:ring-violet-500/40">{{ new_user_dns_config }}</textarea>
+      </div>
+      <div class="p-5 sm:p-6 border-t border-[var(--panel-border)] flex flex-wrap gap-3">
+        <button type="button" id="user-config-copy-btn" class="btn-primary">
+          کپی
+        </button>
+        <button type="button" id="user-config-close-btn" class="px-4 py-2.5 rounded-xl font-medium border border-[var(--panel-border)] bg-[var(--panel-surface)] text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all">
+          بستن
+        </button>
+      </div>
+    </div>
+  </div>
+  {% endif %}
 </section>
+{% endblock %}
+{% block page_script %}
+{% if new_user_dns_config %}
+<script>
+(function() {
+  var overlay = document.getElementById('user-config-modal-overlay');
+  var copyBtn = document.getElementById('user-config-copy-btn');
+  var closeBtn = document.getElementById('user-config-close-btn');
+  var textarea = document.getElementById('user-config-dns-url');
+  function closeModal() {
+    if (overlay) overlay.style.display = 'none';
+  }
+  function copyToClipboard() {
+    textarea.select();
+    try {
+      document.execCommand('copy');
+      copyBtn.textContent = 'کپی شد!';
+      setTimeout(function() { copyBtn.textContent = 'کپی'; }, 2000);
+    } catch (e) {
+      try {
+        navigator.clipboard.writeText(textarea.value);
+        copyBtn.textContent = 'کپی شد!';
+        setTimeout(function() { copyBtn.textContent = 'کپی'; }, 2000);
+      } catch (e2) { alert('کپی نشد'); }
+    }
+  }
+  if (copyBtn) copyBtn.addEventListener('click', copyToClipboard);
+  if (closeBtn) closeBtn.addEventListener('click', closeModal);
+  if (overlay) overlay.addEventListener('click', function(e) { if (e.target === overlay) closeModal(); });
+})();
+</script>
+{% endif %}
 {% endblock %}

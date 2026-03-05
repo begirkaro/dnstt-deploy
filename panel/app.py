@@ -11,6 +11,7 @@ import subprocess
 import secrets
 import hashlib
 import json
+import base64
 import platform
 import time
 from functools import wraps
@@ -51,6 +52,30 @@ def set_config(key, value):
             "INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)", (key, value)
         )
         conn.commit()
+
+
+# Default DNSTT client config (stored in panel settings; addr/ns editable in Settings)
+DNSTT_PUBLIC_KEY_DEFAULT = "8c53a40bebb0ed22030f2611c38b95c0f935652e4fedfbe4b1f381b926aaee60"
+DNS_ADDR_DEFAULT = "8.8.8.8:53"
+DNS_NS_DEFAULT = "d.getcpcod.info"
+
+
+def build_user_dns_config(username, password):
+    """Build JSON config for tunnel user and return dns://<base64> URL."""
+    addr = get_config("dns_addr") or DNS_ADDR_DEFAULT
+    ns = get_config("dns_ns") or DNS_NS_DEFAULT
+    pubkey = get_config("dnstt_public_key") or DNSTT_PUBLIC_KEY_DEFAULT
+    config = {
+        "ps": username,
+        "addr": addr,
+        "ns": ns,
+        "pubkey": pubkey,
+        "user": username,
+        "pass": password,
+    }
+    json_str = json.dumps(config, indent=2, ensure_ascii=False)
+    b64 = base64.b64encode(json_str.encode("utf-8")).decode("ascii")
+    return "dns://" + b64
 
 
 def init_db_if_needed():
@@ -433,11 +458,42 @@ def speedtest():
 @login_required
 def users():
     init_db_if_needed()
+    new_user_dns_config = session.pop("new_user_dns_config", None)
     with get_db() as conn:
         users_list = conn.execute(
             "SELECT id, username, created_at FROM tunnel_users ORDER BY created_at DESC"
         ).fetchall()
-    return render_template("users.html", users=users_list, active_page="users")
+    return render_template(
+        "users.html",
+        users=users_list,
+        active_page="users",
+        new_user_dns_config=new_user_dns_config,
+    )
+
+
+@app.route("/settings", methods=["GET", "POST"])
+@login_required
+def settings():
+    init_db_if_needed()
+    if request.method == "POST":
+        dns_addr = (request.form.get("dns_addr") or "").strip() or DNS_ADDR_DEFAULT
+        dns_ns = (request.form.get("dns_ns") or "").strip() or DNS_NS_DEFAULT
+        pubkey = (request.form.get("dnstt_public_key") or "").strip() or DNSTT_PUBLIC_KEY_DEFAULT
+        set_config("dns_addr", dns_addr)
+        set_config("dns_ns", dns_ns)
+        set_config("dnstt_public_key", pubkey)
+        flash("Settings saved. New user configs will use these values.", "success")
+        return redirect(url_for("settings"))
+    dns_addr = get_config("dns_addr") or DNS_ADDR_DEFAULT
+    dns_ns = get_config("dns_ns") or DNS_NS_DEFAULT
+    dnstt_public_key = get_config("dnstt_public_key") or DNSTT_PUBLIC_KEY_DEFAULT
+    return render_template(
+        "settings.html",
+        active_page="settings",
+        dns_addr=dns_addr,
+        dns_ns=dns_ns,
+        dnstt_public_key=dnstt_public_key,
+    )
 
 
 @app.route("/api/server_info")
@@ -530,7 +586,10 @@ def user_add():
             (username,),
         )
         conn.commit()
-    flash(f"User '{username}' created. They can connect via SSH with this username and password.", "success")
+
+    dns_url = build_user_dns_config(username, password)
+    session["new_user_dns_config"] = dns_url
+    flash(f"User '{username}' created. Copy the config below for the client.", "success")
     return redirect(url_for("users"))
 
 
