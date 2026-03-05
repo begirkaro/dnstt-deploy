@@ -329,7 +329,7 @@ def _ensure_dnstt_iptables_chain():
 
 
 def _iptables_add_user_rule(uid):
-    """Insert a counting rule for this UID at position 1 in DNSTT_USERS if not already present."""
+    """Insert a counting rule for this UID at position 1 in DNSTT_USERS if not already present. iptables shows 'owner UID match <uid>'."""
     try:
         r = subprocess.run(
             [
@@ -340,8 +340,12 @@ def _iptables_add_user_rule(uid):
             text=True,
             timeout=5,
         )
-        if r.returncode == 0 and str(uid) in r.stdout and "uid-owner" in r.stdout:
-            return
+        if r.returncode == 0:
+            uid_str = str(uid)
+            for line in r.stdout.splitlines():
+                parts = line.split()
+                if len(parts) >= 2 and "owner" in line and "match" in line and parts[-1] == uid_str:
+                    return
     except Exception:
         pass
     _ensure_dnstt_iptables_chain()
@@ -359,7 +363,7 @@ def _iptables_add_user_rule(uid):
 
 
 def _iptables_get_byte_count(uid):
-    """Return bytes matched by the rule for this UID, or 0."""
+    """Return total bytes matched by all rules for this UID, or 0. iptables outputs 'owner UID match <uid>'."""
     try:
         r = subprocess.run(
             [
@@ -372,18 +376,20 @@ def _iptables_get_byte_count(uid):
         )
         if r.returncode != 0:
             return 0
-        # Line format: "  pkts bytes target ..." or "    0     0 ACCEPT  all  --  *  *  0.0.0.0/0  0.0.0.0/0  owner UID match uid-owner 1001"
         uid_str = str(uid)
-        suffix = "uid-owner " + uid_str
+        total = 0
         for line in r.stdout.splitlines():
-            if suffix in line and "owner" in line:
-                parts = line.split()
-                if len(parts) >= 2:
-                    try:
-                        return int(parts[1])
-                    except ValueError:
-                        pass
-        return 0
+            parts = line.split()
+            # Skip header / final ACCEPT (no owner). Rule line: "  pkts bytes target ... owner UID match 1001"
+            if len(parts) < 2 or "owner" not in line or "match" not in line:
+                continue
+            if parts[-1] != uid_str:
+                continue
+            try:
+                total += int(parts[1])
+            except ValueError:
+                pass
+        return total
     except Exception:
         return 0
 
