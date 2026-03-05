@@ -77,8 +77,8 @@
                 <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-violet-500/10 text-violet-600 dark:text-violet-400 font-semibold text-lg">
                   {{ u.username[0]|upper }}
                 </span>
-                <div class="min-w-0">
-                  <div class="flex items-center gap-2 flex-wrap">
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-2 flex-wrap mb-3">
                     <span class="font-semibold text-zinc-900 dark:text-white">{{ u.username }}</span>
                     <span class="user-status-badge">
                       {% if u.disabled %}
@@ -92,22 +92,28 @@
                       {% endif %}
                     </span>
                   </div>
-                  <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                    <span class="user-usage-text">Usage <span class="usage-value">{{ format_bytes(u.usage_bytes) }}</span>{% if u.data_limit_bytes is not none %} / <span class="limit-value">{{ format_bytes(u.data_limit_bytes) }}</span>{% endif %}</span>
-                    <span>·</span>
-                    <span>Expires <span class="expires-value">{{ u.expire_at[:10] if u.expire_at else 'Never' }}</span></span>
-                    <span>·</span>
-                    <span>Created {{ u.created_at[:10] if u.created_at else '—' }}</span>
+                  <!-- Usage & limit block -->
+                  <div class="inline-block rounded-xl border border-zinc-200 dark:border-zinc-600 bg-zinc-50/80 dark:bg-zinc-800/50 px-4 py-3 min-w-[200px]">
+                    <div class="flex items-baseline gap-1.5 flex-wrap">
+                      <span class="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Usage</span>
+                      <span class="user-usage-text text-sm font-semibold tabular-nums text-zinc-900 dark:text-white">
+                        <span class="usage-value">{{ format_bytes(u.usage_bytes) }}</span>{% if u.data_limit_bytes is not none %}<span class="text-zinc-400 dark:text-zinc-500 font-normal"> / <span class="limit-value">{{ format_bytes(u.data_limit_bytes) }}</span></span>{% endif %}
+                      </span>
+                    </div>
+                    {% if u.data_limit_bytes is not none and u.data_limit_bytes > 0 %}
+                    <div class="mt-2 w-full h-2 rounded-full bg-zinc-200 dark:bg-zinc-700 overflow-hidden">
+                      <div class="user-usage-bar h-full rounded-full bg-violet-500 transition-all duration-300" style="width: {{ [100, (u.usage_bytes / u.data_limit_bytes * 100)|int]|min }}%"></div>
+                    </div>
+                    {% else %}
+                    <div class="mt-2 w-full h-2 rounded-full bg-zinc-200 dark:bg-zinc-700 overflow-hidden hidden user-usage-bar-wrap">
+                      <div class="user-usage-bar h-full rounded-full bg-violet-500 transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    {% endif %}
                   </div>
-                  {% if u.data_limit_bytes is not none and u.data_limit_bytes > 0 %}
-                  <div class="mt-2 w-full max-w-[200px] h-1.5 rounded-full bg-zinc-200 dark:bg-zinc-700 overflow-hidden">
-                    <div class="user-usage-bar h-full rounded-full bg-violet-500 transition-all" style="width: {{ [100, (u.usage_bytes / u.data_limit_bytes * 100)|int]|min }}%"></div>
+                  <div class="flex flex-wrap gap-x-4 gap-y-0.5 mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+                    <span>Expires <span class="expires-value font-medium text-zinc-600 dark:text-zinc-300">{{ u.expire_at[:10] if u.expire_at else 'Never' }}</span></span>
+                    <span>Created <span class="font-medium text-zinc-600 dark:text-zinc-300">{{ u.created_at[:10] if u.created_at else '—' }}</span></span>
                   </div>
-                  {% else %}
-                  <div class="mt-2 w-full max-w-[200px] h-1.5 rounded-full bg-zinc-200 dark:bg-zinc-700 overflow-hidden hidden user-usage-bar-wrap">
-                    <div class="user-usage-bar h-full rounded-full bg-violet-500 transition-all" style="width: 0%"></div>
-                  </div>
-                  {% endif %}
                 </div>
               </div>
               <div class="flex items-center gap-2 shrink-0 flex-wrap">
