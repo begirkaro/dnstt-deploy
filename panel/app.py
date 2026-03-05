@@ -372,13 +372,15 @@ def _iptables_get_byte_count(uid):
         )
         if r.returncode != 0:
             return 0
-        # Lines look like: 0 0 ACCEPT ... owner UID match uid-owner 1001
+        # Line format: "  pkts bytes target ..." or "    0     0 ACCEPT  all  --  *  *  0.0.0.0/0  0.0.0.0/0  owner UID match uid-owner 1001"
+        uid_str = str(uid)
+        suffix = "uid-owner " + uid_str
         for line in r.stdout.splitlines():
-            if "owner" in line and "uid-owner" in line and str(uid) in line:
+            if suffix in line and "owner" in line:
                 parts = line.split()
                 if len(parts) >= 2:
                     try:
-                        return int(parts[1])  # bytes is 2nd column (pkts, bytes, ...)
+                        return int(parts[1])
                     except ValueError:
                         pass
         return 0
@@ -413,11 +415,16 @@ def _unlock_system_user(username):
 
 
 def update_user_usage_and_check_limits():
-    """For each tunnel user: sync usage from iptables to DB; if over limit or expired, set disabled and lock."""
+    """For each tunnel user: ensure iptables rule exists, sync usage from iptables to DB; if over limit or expired, set disabled and lock."""
+    _ensure_dnstt_iptables_chain()
     with get_db() as conn:
         rows = conn.execute(
             "SELECT id, username, data_limit_bytes, expire_at, disabled FROM tunnel_users"
         ).fetchall()
+        for row in rows:
+            uid = _get_uid(row["username"])
+            if uid:
+                _iptables_add_user_rule(uid)
         for row in rows:
             uid = _get_uid(row["username"])
             usage = _iptables_get_byte_count(uid) if uid else 0
